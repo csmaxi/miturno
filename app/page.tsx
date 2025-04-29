@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClientSupabaseClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuthStore } from "@/lib/store/auth-store";
+import { Calendar, Clock, Share2, Users } from "lucide-react";
 
 // Interfaces para tipado
 interface UserData {
@@ -19,65 +20,9 @@ interface UserData {
   banner_image_url?: string;
 }
 
-// Hook personalizado para autenticación
-const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = useMemo(() => createClientSupabaseClient(), []);
-
-  const fetchUserData = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, full_name, username, email, banner_image_url")
-        .eq("id", userId)
-        .single();
-      if (error) throw error;
-      setUserData(data);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  }, [supabase]);
-
-  const checkUser = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) await fetchUserData(user.id);
-    } catch (error) {
-      console.error("Error checking user:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, fetchUserData]);
-
-  useEffect(() => {
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        if (user) await fetchUserData(user.id);
-      } else if (event === "SIGNED_OUT") {
-        setUser(null);
-        setUserData(null);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, checkUser, fetchUserData]);
-
-  return { user, userData, loading };
-};
-
 // Componente de características
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="flex flex-col items-center space-y-4 text-center">
+  <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
     <div className="bg-primary/10 p-4 rounded-full">
       {icon}
     </div>
@@ -91,7 +36,23 @@ export default function Home() {
   const [username, setUsername] = useState("");
   const router = useRouter();
   const supabase = useMemo(() => createClientSupabaseClient(), []);
-  const { user, userData, loading } = useAuth();
+  const { user, userData, loading, checkUser } = useAuthStore();
+
+  useEffect(() => {
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        await checkUser();
+      } else if (event === "SIGNED_OUT") {
+        useAuthStore.setState({ user: null, userData: null });
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase, checkUser]);
 
   // Validación del nombre de usuario (solo minúsculas, alfanuméricos, 3-20 caracteres)
   const isValidUsername = useCallback((username: string) => {
@@ -188,117 +149,67 @@ export default function Home() {
             </div>
           </section>
         ) : (
-          <section className="w-full py-12 md:py-24 lg:py-32">
-            <div className="container px-4 md:px-6">
-              <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
-                    Potenciá tu agenda
-                  </h1>
-                  <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                    MiTurno es una plataforma que te permite gestionar tus citas y turnos con tu propia URL
-                    personalizada.
-                  </p>
-                </div>
-                <div className="w-full max-w-sm space-y-2">
-                  <div className="flex space-x-2">
-                    <div className="flex-1 relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
-                        miturno.app/
-                      </div>
-                      <Input
-                        className="pl-[105px]"
-                        placeholder="usuario"
-                        value={username}
-                        onChange={handleUsernameChange}
-                        onKeyDown={handleKeyDown}
-                        aria-label="Nombre de usuario para tu URL personalizada"
-                      />
-                    </div>
-                    <Button onClick={handleUsernameSubmit}>Crear cuenta</Button>
+          <>
+            <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-muted">
+              <div className="container px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                  <div className="space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
+                      Potenciá tu agenda
+                    </h1>
+                    <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+                      MiTurno es una plataforma que te permite gestionar tus citas y turnos con tu propia URL
+                      personalizada.
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    ¿Ya tienes cuenta? <Link href="/auth/login" className="underline">Inicia sesión</Link>
-                  </p>
+                  <div className="w-full max-w-sm space-y-2">
+                    <div className="flex space-x-2">
+                      <div className="flex-1 relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                          miturno.app/
+                        </div>
+                        <Input
+                          className="pl-[105px]"
+                          placeholder="usuario"
+                          value={username}
+                          onChange={handleUsernameChange}
+                          onKeyDown={handleKeyDown}
+                          aria-label="Nombre de usuario para tu URL personalizada"
+                        />
+                      </div>
+                      <Button onClick={handleUsernameSubmit}>Crear cuenta</Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      ¿Ya tienes cuenta? <Link href="/auth/login" className="underline">Inicia sesión</Link>
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+            <section className="w-full py-12 md:py-24 lg:py-32">
+              <div className="container px-4 md:px-6">
+                <div className="grid gap-6 lg:grid-cols-3 items-start">
+                  <FeatureCard
+                    icon={<Users className="h-6 w-6 text-primary" />}
+                    title="Creá tu cuenta"
+                    description="Solo te llevará 60 segundos personalizar tu perfil y comenzar a compartir lo que hacés."
+                  />
+                  <FeatureCard
+                    icon={<Clock className="h-6 w-6 text-primary" />}
+                    title="Creá tus servicios"
+                    description="Configura los servicios que ofreces, sus duraciones y precios para que tus clientes puedan reservar."
+                  />
+                  <FeatureCard
+                    icon={<Share2 className="h-6 w-6 text-primary" />}
+                    title="Compartí tu enlace"
+                    description="Contale a tu comunidad sobre MiTurno y tus servicios, publicalo en redes sociales así más personas
+                    podrán reservar turnos."
+                  />
+                </div>
+              </div>
+            </section>
+          </>
         )}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-3 items-start">
-              <FeatureCard
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-6 w-6 text-primary"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                }
-                title="Creá tu cuenta"
-                description="Solo te llevará 60 segundos personalizar tu perfil y comenzar a compartir lo que hacés."
-              />
-              <FeatureCard
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-6 w-6 text-primary"
-                  >
-                    <rect width="18" height="18" x="3" y="3" rx="2" />
-                    <path d="M8 12h8" />
-                    <path d="M12 8v8" />
-                  </svg>
-                }
-                title="Creá tus servicios"
-                description="Configura los servicios que ofreces, sus duraciones y precios para que tus clientes puedan reservar."
-              />
-              <FeatureCard
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-6 w-6 text-primary"
-                  >
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                    <line x1="3" x2="21" y1="9" y2="9" />
-                    <line x1="9" x2="9" y1="21" y2="9" />
-                  </svg>
-                }
-                title="Compartí tu enlace"
-                description="Contale a tu comunidad sobre MiTurno y tus servicios, publicalo en redes sociales así más personas
-                podrán reservar turnos."
-              />
-            </div>
-          </div>
-        </section>
       </main>
       <Footer />
     </div>
