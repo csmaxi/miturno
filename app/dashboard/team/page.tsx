@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from 'next/image'
 
 export default function TeamPage() {
   const { toast } = useToast()
@@ -139,87 +140,84 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Equipo</h1>
+        <h1 className="text-2xl font-bold">Equipo</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo miembro
+              Agregar miembro
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Agregar miembro al equipo</DialogTitle>
-              <DialogDescription>Agrega un nuevo miembro a tu equipo</DialogDescription>
+              <DialogTitle>Agregar miembro del equipo</DialogTitle>
+              <DialogDescription>
+                Agrega un nuevo miembro a tu equipo. Podrás editarlo o eliminarlo más tarde.
+              </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Nombre del miembro"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="position">Cargo (opcional)</Label>
-                  <Input
-                    id="position"
-                    name="position"
-                    placeholder="Ej: Estilista Senior"
-                    value={formData.position}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="instagram">Instagram (opcional)</Label>
-                  <Input
-                    id="instagram"
-                    name="instagram"
-                    placeholder="@usuario_instagram"
-                    value={formData.instagram}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">URL de imagen (opcional)</Label>
-                  <Input
-                    id="image_url"
-                    name="image_url"
-                    placeholder="https://ejemplo.com/imagen.jpg"
-                    value={formData.image_url}
-                    onChange={handleChange}
-                  />
-                </div>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Nombre</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Nombre del miembro"
+                />
               </div>
-              <DialogFooter>
-                <Button type="submit">Guardar</Button>
-              </DialogFooter>
-            </form>
+              <div className="grid gap-2">
+                <Label htmlFor="position">Cargo</Label>
+                <Input
+                  id="position"
+                  name="position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  placeholder="Cargo o rol"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="instagram">Instagram</Label>
+                <Input
+                  id="instagram"
+                  name="instagram"
+                  value={formData.instagram}
+                  onChange={handleChange}
+                  placeholder="@usuario"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="image_url">URL de imagen</Label>
+                <Input
+                  id="image_url"
+                  name="image_url"
+                  value={formData.image_url}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleSubmit}>Agregar miembro</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       {loading ? (
-        <div className="text-center py-10">Cargando miembros del equipo...</div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        </div>
       ) : teamMembers.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <Users className="h-10 w-10 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">No hay miembros en el equipo</p>
-            <p className="text-muted-foreground text-center mb-6">
-              Aún no has agregado miembros a tu equipo. Agrega miembros para mostrarlos en tu perfil.
+          <CardContent className="flex flex-col items-center justify-center h-64 text-center">
+            <Users className="h-12 w-12 text-muted-foreground mb-4" />
+            <CardTitle className="mb-2">No hay miembros en el equipo</CardTitle>
+            <p className="text-muted-foreground">
+              Comienza agregando miembros a tu equipo para mostrarlos en tu perfil.
             </p>
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar miembro
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -235,22 +233,31 @@ export default function TeamPage() {
               </CardHeader>
               <CardContent className="p-6 pt-0">
                 <div className="flex flex-col items-center text-center">
-                  <Avatar className="h-24 w-24 mb-4">
-                    <AvatarImage src={member.image_url || ""} alt={member.name} />
-                    <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  <Avatar className="h-24 w-24 mb-4 relative">
+                    {member.image_url ? (
+                      <Image
+                        src={member.image_url}
+                        alt={member.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 96px) 100vw, 96px"
+                      />
+                    ) : (
+                      <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    )}
                   </Avatar>
                   <CardTitle className="mb-1">{member.name}</CardTitle>
                   {member.position && <p className="text-sm text-muted-foreground mb-2">{member.position}</p>}
-                  {member.bio && (
+                  {member.instagram && (
                     <div className="flex items-center mt-2">
                       <Instagram className="h-4 w-4 mr-1 text-pink-500" />
                       <a
-                        href={`https://instagram.com/${member.bio.replace("@", "")}`}
+                        href={`https://instagram.com/${member.instagram.replace("@", "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-pink-500 hover:underline"
                       >
-                        {member.bio}
+                        {member.instagram}
                       </a>
                     </div>
                   )}
