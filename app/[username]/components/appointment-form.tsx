@@ -17,6 +17,21 @@ import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { generateWhatsAppLink, formatAppointmentNotificationForOwner } from "@/lib/whatsapp-direct-service"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Info } from "lucide-react"
+
+const SOUTH_AMERICAN_COUNTRIES = [
+  { code: "AR", name: "Argentina", prefix: "+54" },
+  { code: "BO", name: "Bolivia", prefix: "+591" },
+  { code: "BR", name: "Brasil", prefix: "+55" },
+  { code: "CL", name: "Chile", prefix: "+56" },
+  { code: "CO", name: "Colombia", prefix: "+57" },
+  { code: "EC", name: "Ecuador", prefix: "+593" },
+  { code: "PY", name: "Paraguay", prefix: "+595" },
+  { code: "PE", name: "Perú", prefix: "+51" },
+  { code: "UY", name: "Uruguay", prefix: "+598" },
+  { code: "VE", name: "Venezuela", prefix: "+58" }
+]
 
 interface AppointmentFormProps {
   userId: string
@@ -28,6 +43,7 @@ interface AppointmentFormProps {
 export function AppointmentForm({ userId, services, teamMembers, availability }: AppointmentFormProps) {
   const { toast } = useToast()
   const [date, setDate] = useState<Date | undefined>(undefined)
+  const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -44,6 +60,19 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleCountryChange = (value: string) => {
+    const country = SOUTH_AMERICAN_COUNTRIES.find(c => c.code === value) || SOUTH_AMERICAN_COUNTRIES[0]
+    setSelectedCountry(country)
+    
+    // Actualizar el número de teléfono con el nuevo prefijo
+    const currentPhone = formData.phone
+    const phoneWithoutPrefix = currentPhone.replace(/^\+\d+/, "").trim()
+    setFormData(prev => ({
+      ...prev,
+      phone: `${country.prefix} ${phoneWithoutPrefix}`
+    }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -228,14 +257,30 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       </div>
       <div className="space-y-2">
         <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
-        <Input
-          id="phone"
-          name="phone"
-          placeholder="Ej: +5491123456789"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-        />
+        <div className="flex gap-2">
+          <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Seleccionar país" />
+            </SelectTrigger>
+            <SelectContent>
+              {SOUTH_AMERICAN_COUNTRIES.map((country) => (
+                <SelectItem key={country.code} value={country.code}>
+                  {country.name} ({country.prefix})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder={`Ej: ${selectedCountry.prefix} 11 1234-5678`}
+            required
+            className="flex-1"
+          />
+        </div>
         <p className="text-xs text-muted-foreground">
           Necesario para recibir confirmaciones y recordatorios de tu turno.
         </p>

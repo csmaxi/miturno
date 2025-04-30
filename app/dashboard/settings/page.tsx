@@ -10,7 +10,9 @@ import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Upload } from "lucide-react"
+import { Upload, Info } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface ProfileData {
   full_name: string
@@ -22,10 +24,24 @@ interface ProfileData {
   phone: string
 }
 
+const SOUTH_AMERICAN_COUNTRIES = [
+  { code: "AR", name: "Argentina", prefix: "+54" },
+  { code: "BO", name: "Bolivia", prefix: "+591" },
+  { code: "BR", name: "Brasil", prefix: "+55" },
+  { code: "CL", name: "Chile", prefix: "+56" },
+  { code: "CO", name: "Colombia", prefix: "+57" },
+  { code: "EC", name: "Ecuador", prefix: "+593" },
+  { code: "PY", name: "Paraguay", prefix: "+595" },
+  { code: "PE", name: "Perú", prefix: "+51" },
+  { code: "UY", name: "Uruguay", prefix: "+598" },
+  { code: "VE", name: "Venezuela", prefix: "+58" }
+]
+
 export default function SettingsPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
   const [profileData, setProfileData] = useState<ProfileData>({
     full_name: "",
     username: "",
@@ -53,6 +69,11 @@ export default function SettingsPage() {
 
         if (error) throw error
 
+        // Determinar el país basado en el prefijo del teléfono
+        const phone = profile.phone || ""
+        const country = SOUTH_AMERICAN_COUNTRIES.find(c => phone.startsWith(c.prefix)) || SOUTH_AMERICAN_COUNTRIES[0]
+        setSelectedCountry(country)
+
         setProfileData({
           full_name: profile.full_name || "",
           username: profile.username || "",
@@ -60,7 +81,7 @@ export default function SettingsPage() {
           profile_description: profile.profile_description || "",
           profile_image_url: profile.profile_image_url || "",
           banner_image_url: profile.banner_image_url || "",
-          phone: profile.phone || "",
+          phone: phone,
         })
       }
     } catch (error: any) {
@@ -83,45 +104,69 @@ export default function SettingsPage() {
     setProfileData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleCountryChange = (value: string) => {
+    const country = SOUTH_AMERICAN_COUNTRIES.find(c => c.code === value) || SOUTH_AMERICAN_COUNTRIES[0]
+    setSelectedCountry(country)
+    
+    // Actualizar el número de teléfono con el nuevo prefijo
+    const currentPhone = profileData.phone
+    const phoneWithoutPrefix = currentPhone.replace(/^\+\d+/, "").trim()
+    setProfileData(prev => ({
+      ...prev,
+      phone: `${country.prefix} ${phoneWithoutPrefix}`
+    }))
+  }
+
   const handleSaveProfile = async () => {
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Usuario no autenticado")
 
-      // Validar nombre de usuario único
-      if (profileData.username) {
-        const { data: existingUser } = await supabase
-          .from("users")
-          .select("username")
-          .eq("username", profileData.username)
-          .neq("id", user.id)
-          .single()
-
-        if (existingUser) {
+      // Validar formato del teléfono
+      if (profileData.phone) {
+        const phoneWithoutPrefix = profileData.phone.replace(selectedCountry.prefix, "").trim()
+        if (!/^\d{8,12}$/.test(phoneWithoutPrefix)) {
           toast({
             title: "Error",
-            description: "El nombre de usuario ya está en uso",
+            description: "El número de teléfono debe tener entre 8 y 12 dígitos (sin contar el prefijo del país)",
             variant: "destructive",
           })
           return
         }
       }
 
-      await supabase
+      // Preparar los datos para actualizar
+      const updateData = {
+        full_name: profileData.full_name,
+        profile_title: profileData.profile_title,
+        profile_description: profileData.profile_description,
+        phone: profileData.phone,
+        profile_image_url: profileData.profile_image_url,
+        banner_image_url: profileData.banner_image_url,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
         .from("users")
-        .update(profileData)
+        .update(updateData)
         .eq("id", user.id)
+
+      if (error) throw error
 
       toast({
         title: "Perfil actualizado",
         description: "Tus cambios se guardaron correctamente",
       })
 
+      // Recargar los datos después de guardar
+      await fetchUserData()
+
     } catch (error: any) {
+      console.error("Error al guardar:", error)
       toast({
         title: "Error",
-        description: error.message || "Error al guardar",
+        description: error.message || "Error al guardar los cambios",
         variant: "destructive",
       })
     } finally {
@@ -218,27 +263,45 @@ export default function SettingsPage() {
                       <Input
                         id="username"
                         name="username"
-                        className="rounded-l-none"
+                        className="rounded-l-none bg-muted"
                         value={profileData.username}
-                        onChange={handleProfileChange}
-                        required
+                        readOnly
+                        disabled
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      El nombre de usuario no puede ser modificado
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={profileData.phone}
-                      onChange={handleProfileChange}
-                      placeholder="+54 11 1234-5678"
-                      required
-                    />
+                    <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Seleccionar país" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SOUTH_AMERICAN_COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.name} ({country.prefix})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={profileData.phone}
+                        onChange={handleProfileChange}
+                        placeholder={`Ej: ${selectedCountry.prefix} 11 1234-5678`}
+                        required
+                        className="flex-1"
+                      />
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Para recibir notificaciones de reservas
+                      Necesario para recibir notificaciones de turnos.
                     </p>
                   </div>
 
