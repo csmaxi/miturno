@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,20 +20,34 @@ interface UserData {
   created_at: string;
 }
 
-export default async function ExplorarPage({
-  searchParams,
-}: {
-  searchParams: { page?: string }
-}) {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// Componente de carga para los perfiles
+const ProfilesSkeleton = () => (
+  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {[1, 2, 3, 4, 5, 6].map((i) => (
+      <Card key={i} className="overflow-hidden">
+        <CardHeader className="p-0">
+          <div className="h-32 bg-muted animate-pulse" />
+        </CardHeader>
+        <CardContent className="p-6 pt-0 -mt-12 text-center">
+          <div className="h-24 w-24 rounded-full bg-muted animate-pulse mx-auto" />
+          <div className="mt-4 h-6 w-32 bg-muted animate-pulse mx-auto" />
+          <div className="mt-2 h-4 w-24 bg-muted animate-pulse mx-auto" />
+        </CardContent>
+        <CardFooter className="p-6 pt-0 flex justify-center">
+          <div className="h-9 w-24 bg-muted animate-pulse" />
+        </CardFooter>
+      </Card>
+    ))}
+  </div>
+);
 
-  const page = Number(searchParams.page) || 1;
+// Componente para la lista de perfiles
+const ProfilesList = async ({ page }: { page: number }) => {
+  const supabase = createServerSupabaseClient();
   const pageSize = 12;
   const start = (page - 1) * pageSize;
   const end = start + pageSize - 1;
 
-  // Obtener usuarios con perfiles públicos
   const { data: users, count } = await supabase
     .from("users")
     .select("*", { count: "exact" })
@@ -41,6 +56,80 @@ export default async function ExplorarPage({
 
   const totalPages = Math.ceil((count || 0) / pageSize);
 
+  if (!users || users.length === 0) {
+    return (
+      <div className="col-span-full text-center py-12">
+        <p className="text-muted-foreground">No se encontraron perfiles</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {users.map((user) => (
+          <Card key={user.id} className="overflow-hidden">
+            <CardHeader className="p-0">
+              <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/40">
+                {user.banner_image_url && (
+                  <img
+                    src={user.banner_image_url || "/placeholder.svg"}
+                    alt="Banner"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 pt-0 -mt-12 text-center">
+              <Avatar className="h-24 w-24 mx-auto border-4 border-background">
+                <AvatarImage src={user.profile_image_url || ""} alt={user.full_name} />
+                <AvatarFallback className="text-2xl">
+                  {user.full_name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <CardTitle className="mt-4">{user.full_name}</CardTitle>
+              <CardDescription>@{user.username}</CardDescription>
+              {user.profile_title && <p className="mt-2 text-sm">{user.profile_title}</p>}
+            </CardContent>
+            <CardFooter className="p-6 pt-0 flex justify-center">
+              <Button asChild>
+                <Link href={`/${user.username}`}>Ver perfil</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+            <Link
+              key={pageNum}
+              href={`/explorar?page=${pageNum}`}
+              className={`px-4 py-2 rounded-md ${
+                pageNum === page
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-muted/80"
+              }`}
+            >
+              {pageNum}
+            </Link>
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
+export default async function ExplorarPage({
+  searchParams,
+}: {
+  searchParams: { page?: string }
+}) {
+  const supabase = createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const page = Number(searchParams.page) || 1;
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar user={user} />
@@ -48,7 +137,9 @@ export default async function ExplorarPage({
         <div className="container px-4 py-12 md:px-6">
           <div className="space-y-8">
             <div className="text-center space-y-4">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Explorar Perfiles</h1>
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Explorar Perfiles
+              </h1>
               <p className="text-gray-500 md:text-xl dark:text-gray-400 max-w-2xl mx-auto">
                 Descubre profesionales y servicios disponibles en MiTurno
               </p>
@@ -61,64 +152,9 @@ export default async function ExplorarPage({
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {users && users.length > 0 ? (
-                users.map((user) => (
-                  <Card key={user.id} className="overflow-hidden">
-                    <CardHeader className="p-0">
-                      <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/40">
-                        {user.banner_image_url && (
-                          <img
-                            src={user.banner_image_url || "/placeholder.svg"}
-                            alt="Banner"
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6 pt-0 -mt-12 text-center">
-                      <Avatar className="h-24 w-24 mx-auto border-4 border-background">
-                        <AvatarImage src={user.profile_image_url || ""} alt={user.full_name} />
-                        <AvatarFallback className="text-2xl">
-                          {user.full_name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <CardTitle className="mt-4">{user.full_name}</CardTitle>
-                      <CardDescription>@{user.username}</CardDescription>
-                      {user.profile_title && <p className="mt-2 text-sm">{user.profile_title}</p>}
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 flex justify-center">
-                      <Button asChild>
-                        <Link href={`/${user.username}`}>Ver perfil</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-muted-foreground">No se encontraron perfiles</p>
-                </div>
-              )}
-            </div>
-
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <Link
-                    key={pageNum}
-                    href={`/explorar?page=${pageNum}`}
-                    className={`px-4 py-2 rounded-md ${
-                      pageNum === page
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
-                  >
-                    {pageNum}
-                  </Link>
-                ))}
-              </div>
-            )}
+            <Suspense fallback={<ProfilesSkeleton />}>
+              <ProfilesList page={page} />
+            </Suspense>
           </div>
         </div>
       </main>

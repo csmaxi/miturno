@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { createClientSupabaseClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { Calendar, Clock, Share2, Users } from "lucide-react";
+import { Session } from '@supabase/supabase-js';
 
 // Interfaces para tipado
 interface UserData {
@@ -22,7 +23,7 @@ interface UserData {
 
 // Componente de características
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+  <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-lg border bg-card">
     <div className="bg-primary/10 p-4 rounded-full">
       {icon}
     </div>
@@ -39,10 +40,35 @@ export default function Home() {
   const { user, userData, loading, checkUser } = useAuthStore();
 
   useEffect(() => {
-    checkUser();
+    let mounted = true;
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (session?.user) {
+          useAuthStore.setState({ user: session.user });
+          checkUser();
+        } else {
+          useAuthStore.setState({ user: null, userData: null });
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          useAuthStore.setState({ user: null, userData: null });
+        }
+      }
+    };
+
+    initializeAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+      if (!mounted) return;
+
+      if (event === "SIGNED_IN" && session) {
+        useAuthStore.setState({ user: session.user });
         await checkUser();
       } else if (event === "SIGNED_OUT") {
         useAuthStore.setState({ user: null, userData: null });
@@ -50,6 +76,7 @@ export default function Home() {
     });
 
     return () => {
+      mounted = false;
       authListener.subscription.unsubscribe();
     };
   }, [supabase, checkUser]);
@@ -107,18 +134,6 @@ export default function Home() {
       handleUsernameSubmit();
     }
   }, [handleUsernameSubmit]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        <Navbar user={null} />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">Cargando...</div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col">

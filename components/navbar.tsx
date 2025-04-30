@@ -74,14 +74,9 @@ export function Navbar({ user: propUser }: { user: any }) {
           <div className="flex items-center space-x-4">
             <ThemeSwitcher />
             {user ? (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-                <Button variant="ghost" onClick={handleSignOut}>
-                  Cerrar sesión
-                </Button>
-              </>
+              <Button variant="ghost" onClick={handleSignOut}>
+                Cerrar sesión
+              </Button>
             ) : (
               <Button variant="ghost" asChild>
                 <Link href="/auth/login">Iniciar sesión</Link>
@@ -117,14 +112,9 @@ export function Navbar({ user: propUser }: { user: any }) {
                 </Link>
               ))}
               {user ? (
-                <>
-                  <Link href="/dashboard" className="text-sm font-medium hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
-                    Dashboard
-                  </Link>
-                  <button className="text-left text-sm font-medium hover:text-primary" onClick={handleSignOut}>
-                    Cerrar sesión
-                  </button>
-                </>
+                <button className="text-left text-sm font-medium hover:text-primary" onClick={handleSignOut}>
+                  Cerrar sesión
+                </button>
               ) : (
                 <Link href="/auth/login" className="text-sm font-medium hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
                   Iniciar sesión
