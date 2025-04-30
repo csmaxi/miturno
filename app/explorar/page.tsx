@@ -19,16 +19,27 @@ interface UserData {
   created_at: string;
 }
 
-export default async function ExplorarPage() {
+export default async function ExplorarPage({
+  searchParams,
+}: {
+  searchParams: { page?: string }
+}) {
   const supabase = createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const page = Number(searchParams.page) || 1;
+  const pageSize = 12;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
+
   // Obtener usuarios con perfiles públicos
-  const { data: users } = await supabase
+  const { data: users, count } = await supabase
     .from("users")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(12) as { data: UserData[] | null };
+    .range(start, end);
+
+  const totalPages = Math.ceil((count || 0) / pageSize);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -89,6 +100,25 @@ export default async function ExplorarPage() {
                 </div>
               )}
             </div>
+
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-8">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <Link
+                    key={pageNum}
+                    href={`/explorar?page=${pageNum}`}
+                    className={`px-4 py-2 rounded-md ${
+                      pageNum === page
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted hover:bg-muted/80"
+                    }`}
+                  >
+                    {pageNum}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

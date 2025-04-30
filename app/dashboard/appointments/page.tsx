@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -35,37 +35,33 @@ export default function AppointmentsPage() {
   const [openDialog, setOpenDialog] = useState(false)
   const [processingAction, setProcessingAction] = useState(false)
   const [userData, setUserData] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState("pending") // Nuevo estado para controlar la pestaña activa
+  const [activeTab, setActiveTab] = useState("pending")
 
   const supabase = createClientSupabaseClient()
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     setLoading(true)
     try {
       const { data: authData } = await supabase.auth.getUser()
 
       if (authData.user) {
-        const { data: userProfile, error: userError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", authData.user.id)
-          .single()
+        const [userProfileResponse, appointmentsResponse] = await Promise.all([
+          supabase.from("users").select("*").eq("id", authData.user.id).single(),
+          supabase.from("appointments")
+            .select(`
+              *,
+              services:service_id (name),
+              team_members:team_member_id (name)
+            `)
+            .eq("user_id", authData.user.id)
+            .order("appointment_date", { ascending: true })
+        ])
 
-        if (userError) throw userError
-        setUserData(userProfile)
+        if (userProfileResponse.error) throw userProfileResponse.error
+        setUserData(userProfileResponse.data)
 
-        const { data, error } = await supabase
-          .from("appointments")
-          .select(`
-            *,
-            services:service_id (name),
-            team_members:team_member_id (name)
-          `)
-          .eq("user_id", authData.user.id)
-          .order("appointment_date", { ascending: true })
-
-        if (error) throw error
-        setAppointments(data || [])
+        if (appointmentsResponse.error) throw appointmentsResponse.error
+        setAppointments(appointmentsResponse.data || [])
       }
     } catch (error: any) {
       toast({
@@ -76,13 +72,13 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase, toast])
 
   useEffect(() => {
     fetchAppointments()
-  }, [])
+  }, [fetchAppointments])
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const handleStatusChange = useCallback(async (id: string, status: string) => {
     setProcessingAction(true)
     try {
       const { data: appointmentData, error: fetchError } = await supabase
@@ -99,7 +95,6 @@ export default function AppointmentsPage() {
       const { error } = await supabase.from("appointments").update({ status }).eq("id", id)
       if (error) throw error
 
-      // Enviar WhatsApp automáticamente al confirmar/cancelar
       if (appointmentData && appointmentData.client_phone && (status === "confirmed" || status === "cancelled")) {
         let message = status === "confirmed" 
           ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, userData)
@@ -116,7 +111,6 @@ export default function AppointmentsPage() {
         description: `El turno ha sido ${status === "confirmed" ? "confirmado" : status === "completed" ? "completado" : "cancelado"} exitosamente`,
       })
 
-      // Cambiar a la pestaña correspondiente
       if (status === "confirmed") setActiveTab("confirmed")
       else if (status === "cancelled") setActiveTab("cancelled")
       else if (status === "completed") setActiveTab("completed")
@@ -131,7 +125,7 @@ export default function AppointmentsPage() {
     } finally {
       setProcessingAction(false)
     }
-  }
+  }, [supabase, userData, toast, fetchAppointments])
 
   const handleAddNotes = async () => {
     if (!selectedAppointment) return
@@ -178,25 +172,14 @@ export default function AppointmentsPage() {
     }
   }
 
-  const filterAppointmentsByStatus = (status: string) => {
-    return appointments.filter((appointment) => appointment.status === status)
-  }
-
-  const pendingAppointments = filterAppointmentsByStatus("pending")
-  const confirmedAppointments = filterAppointmentsByStatus("confirmed")
-  const cancelledAppointments = filterAppointmentsByStatus("cancelled")
-  const completedAppointments = filterAppointmentsByStatus("completed")
-
-  const handleWhatsAppAction = async (appointment: any, type: "confirm" | "cancel") => {
+  const handleWhatsAppAction = useCallback(async (appointment: any, type: "confirm" | "cancel") => {
     setProcessingAction(true)
     try {
       const status = type === "confirm" ? "confirmed" : "cancelled"
       
-      // Actualizar estado en la base de datos
       const { error } = await supabase.from("appointments").update({ status }).eq("id", appointment.id)
       if (error) throw error
 
-      // Generar y abrir enlace de WhatsApp
       const message = type === "confirm"
         ? formatAppointmentConfirmationForClient(appointment, appointment.services || {}, userData)
         : formatAppointmentCancellationForClient(appointment, appointment.services || {}, userData)
@@ -204,7 +187,6 @@ export default function AppointmentsPage() {
       const whatsappLink = generateWhatsAppLink(appointment.client_phone, message)
       window.open(whatsappLink, "_blank")
 
-      // Actualizar pestaña activa
       setActiveTab(status)
       
       toast({
@@ -222,7 +204,33 @@ export default function AppointmentsPage() {
     } finally {
       setProcessingAction(false)
     }
-  }
+  }, [supabase, userData, toast, fetchAppointments])
+
+  // Memoizar los filtros de citas
+  const filteredAppointments = useMemo(() => 
+    appointments.filter(app => app.status === activeTab),
+    [appointments, activeTab]
+  )
+
+  const pendingAppointments = useMemo(() => 
+    appointments.filter(app => app.status === "pending"),
+    [appointments]
+  )
+
+  const confirmedAppointments = useMemo(() => 
+    appointments.filter(app => app.status === "confirmed"),
+    [appointments]
+  )
+
+  const completedAppointments = useMemo(() => 
+    appointments.filter(app => app.status === "completed"),
+    [appointments]
+  )
+
+  const cancelledAppointments = useMemo(() => 
+    appointments.filter(app => app.status === "cancelled"),
+    [appointments]
+  )
 
   const renderAppointmentList = (appointmentList: any[]) => {
     if (appointmentList.length === 0) {

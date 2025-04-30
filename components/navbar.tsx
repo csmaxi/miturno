@@ -53,7 +53,7 @@ export function Navbar({ user: propUser }: { user: any }) {
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Calendar className="h-6 w-6" />
-            <span className="font-bold text-xl">MiTurno.app</span>
+            <span className="font-bold text-xl">MiTurno</span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2">

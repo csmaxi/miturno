@@ -33,36 +33,25 @@ export default async function Dashboard() {
     redirect("/auth/login");
   }
 
-  // Obtener datos del usuario
-  const { data: userData } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", user.id)
-    .single() as { data: UserData | null };
-
-  // Obtener estadísticas
-  const { data: servicesCount } = await supabase
-    .from("services")
-    .select("id", { count: "exact" })
-    .eq("user_id", user.id);
-
-  const { data: teamCount } = await supabase
-    .from("team_members")
-    .select("id", { count: "exact" })
-    .eq("user_id", user.id);
-
-  const { data: appointmentsCount } = await supabase
-    .from("appointments")
-    .select("id", { count: "exact" })
-    .eq("user_id", user.id);
-
-  const { data: pendingAppointments } = await supabase
-    .from("appointments")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("status", "pending")
-    .order("appointment_date", { ascending: true })
-    .limit(5) as { data: Appointment[] | null };
+  // Obtener todos los datos en paralelo
+  const [
+    { data: userData },
+    { data: servicesCount },
+    { data: teamCount },
+    { data: appointmentsCount },
+    { data: pendingAppointments }
+  ] = await Promise.all([
+    supabase.from("users").select("*").eq("id", user.id).single(),
+    supabase.from("services").select("id", { count: "exact" }).eq("user_id", user.id),
+    supabase.from("team_members").select("id", { count: "exact" }).eq("user_id", user.id),
+    supabase.from("appointments").select("id", { count: "exact" }).eq("user_id", user.id),
+    supabase.from("appointments")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .order("appointment_date", { ascending: true })
+      .limit(5)
+  ]);
 
   return (
     <div className="space-y-6">

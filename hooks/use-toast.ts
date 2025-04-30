@@ -2,6 +2,8 @@
 
 // Inspired by react-hot-toast library
 import * as React from "react"
+import { useMemo, useCallback } from "react"
+import dynamic from "next/dynamic"
 
 import type {
   ToastActionElement,
@@ -9,7 +11,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string

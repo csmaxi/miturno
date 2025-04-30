@@ -15,9 +15,17 @@ import {
 import { Calendar, Clock, Users, Instagram } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { AppointmentForm } from "./components/appointment-form";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+// Definir la interfaz para las props del AppointmentForm
+interface AppointmentFormProps {
+  userId: string;
+  services: any[];
+  teamMembers: any[];
+  availability: any[];
+}
 
 // Componente de carga para el formulario
 const AppointmentFormLoader = () => (
@@ -31,6 +39,13 @@ const AppointmentFormLoader = () => (
     </div>
   </div>
 );
+
+// Cargar el formulario de manera lazy con tipos correctos
+const AppointmentForm = dynamic<AppointmentFormProps>(() => 
+  import('./components/appointment-form').then(mod => mod.AppointmentForm), {
+  loading: () => <AppointmentFormLoader />,
+  ssr: false
+});
 
 export default async function UserProfilePage({
   params,
@@ -51,27 +66,29 @@ export default async function UserProfilePage({
     notFound();
   }
 
-  // Obtener servicios del usuario
-  const { data: services } = await supabase
-    .from("services")
-    .select("*")
-    .eq("user_id", userData.id)
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-
-  // Obtener miembros del equipo
-  const { data: teamMembers } = await supabase
-    .from("team_members")
-    .select("*")
-    .eq("user_id", userData.id)
-    .order("name", { ascending: true });
-
-  // Obtener disponibilidad
-  const { data: availability } = await supabase
-    .from("availability")
-    .select("*")
-    .eq("user_id", userData.id)
-    .order("day_of_week", { ascending: true });
+  // Obtener todos los datos en paralelo
+  const [
+    { data: services },
+    { data: teamMembers },
+    { data: availability }
+  ] = await Promise.all([
+    supabase
+      .from("services")
+      .select("*")
+      .eq("user_id", userData.id)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+    supabase
+      .from("team_members")
+      .select("*")
+      .eq("user_id", userData.id)
+      .order("name", { ascending: true }),
+    supabase
+      .from("availability")
+      .select("*")
+      .eq("user_id", userData.id)
+      .order("day_of_week", { ascending: true })
+  ]);
 
   // Obtener usuario autenticado de forma segura
   const { data: { user: currentUser } } = await supabase.auth.getUser();
