@@ -10,8 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash, Upload } from "lucide-react"
+import { Upload } from "lucide-react"
 
 interface ProfileData {
   full_name: string
@@ -21,14 +20,6 @@ interface ProfileData {
   profile_image_url: string
   banner_image_url: string
   phone: string
-}
-
-interface Availability {
-  id: string
-  user_id: string
-  day_of_week: number
-  start_time: string
-  end_time: string
 }
 
 export default function SettingsPage() {
@@ -43,12 +34,6 @@ export default function SettingsPage() {
     profile_image_url: "",
     banner_image_url: "",
     phone: "",
-  })
-  const [availability, setAvailability] = useState<Availability[]>([])
-  const [newAvailability, setNewAvailability] = useState({
-    day_of_week: "1",
-    start_time: "09:00",
-    end_time: "17:00",
   })
 
   const supabase = createClientSupabaseClient()
@@ -77,15 +62,6 @@ export default function SettingsPage() {
           banner_image_url: profile.banner_image_url || "",
           phone: profile.phone || "",
         })
-
-        // Obtener disponibilidad
-        const { data: availabilityData } = await supabase
-          .from("availability")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("day_of_week", { ascending: true })
-
-        setAvailability(availabilityData || [])
       }
     } catch (error: any) {
       toast({
@@ -153,93 +129,50 @@ export default function SettingsPage() {
     }
   }
 
-  const handleAvailabilityChange = (field: string, value: string) => {
-    setNewAvailability(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleAddAvailability = async () => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "profile" | "banner") => {
     try {
+      const file = e.target.files?.[0]
+      if (!file) return
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Usuario no autenticado")
 
-      const day = Number(newAvailability.day_of_week)
-      const existing = availability.find(a => a.day_of_week === day)
+      const fileExt = file.name.split(".").pop()
+      const filePath = `${user.id}/${type}_${Date.now()}.${fileExt}`
 
-      if (existing) {
-        await supabase
-          .from("availability")
-          .update({
-            start_time: newAvailability.start_time,
-            end_time: newAvailability.end_time,
-          })
-          .eq("id", existing.id)
-      } else {
-        await supabase.from("availability").insert({
-          user_id: user.id,
-          day_of_week: day,
-          start_time: newAvailability.start_time,
-          end_time: newAvailability.end_time,
-        })
-      }
+      const { error: uploadError } = await supabase.storage
+        .from("public")
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("public")
+        .getPublicUrl(filePath)
+
+      const updateData = type === "profile"
+        ? { profile_image_url: publicUrl }
+        : { banner_image_url: publicUrl }
+
+      await supabase
+        .from("users")
+        .update(updateData)
+        .eq("id", user.id)
+
+      setProfileData(prev => ({ ...prev, ...updateData }))
 
       toast({
-        title: "Disponibilidad actualizada",
-        description: "Los cambios se aplicaron correctamente",
+        title: "Imagen actualizada",
+        description: "La imagen se subió correctamente",
       })
 
-      fetchUserData()
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Error al actualizar",
+        description: error.message || "Error al subir la imagen",
         variant: "destructive",
       })
     }
-  }
-
-  const handleDeleteAvailability = async (id: string) => {
-    try {
-      await supabase.from("availability").delete().eq("id", id)
-      toast({
-        title: "Horario eliminado",
-        description: "El horario fue removido correctamente",
-      })
-      fetchUserData()
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Error al eliminar",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "profile" | "banner") => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    try {
-      const previewUrl = URL.createObjectURL(file)
-      setProfileData(prev => ({
-        ...prev,
-        [`${type}_image_url`]: previewUrl
-      }))
-      toast({
-        title: "Imagen cargada",
-        description: "Guarda los cambios para aplicar la imagen",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo cargar la imagen",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const getDayName = (dayOfWeek: number) => {
-    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-    return days[dayOfWeek]
   }
 
   if (loading) {
@@ -251,16 +184,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Configuración</h1>
-
+    <div className="container py-6">
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Perfil</TabsTrigger>
-          <TabsTrigger value="availability">Disponibilidad</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="profile" className="space-y-6 mt-6">
+        <TabsContent value="profile">
           <Card>
             <CardHeader>
               <CardTitle>Información del perfil</CardTitle>
@@ -367,12 +296,6 @@ export default function SettingsPage() {
                             Seleccionar archivo
                           </Button>
                         </div>
-                        <Input
-                          name="profile_image_url"
-                          placeholder="URL de imagen"
-                          value={profileData.profile_image_url}
-                          onChange={handleProfileChange}
-                        />
                       </div>
                     </div>
                   </div>
@@ -397,12 +320,6 @@ export default function SettingsPage() {
                         Subir banner
                       </Button>
                     </div>
-                    <Input
-                      name="banner_image_url"
-                      placeholder="URL de banner"
-                      value={profileData.banner_image_url}
-                      onChange={handleProfileChange}
-                    />
                   </div>
                 </div>
               </div>
@@ -411,86 +328,6 @@ export default function SettingsPage() {
                 <Button onClick={handleSaveProfile} disabled={saving}>
                   {saving ? "Guardando..." : "Guardar cambios"}
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="availability" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Disponibilidad</CardTitle>
-              <CardDescription>Configura tus horarios disponibles</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>Día</Label>
-                  <Select
-                    value={newAvailability.day_of_week}
-                    onValueChange={(value) => handleAvailabilityChange("day_of_week", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un día" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[0, 1, 2, 3, 4, 5, 6].map((day) => (
-                        <SelectItem key={day} value={day.toString()}>
-                          {getDayName(day)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Inicio</Label>
-                  <Input
-                    type="time"
-                    value={newAvailability.start_time}
-                    onChange={(e) => handleAvailabilityChange("start_time", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fin</Label>
-                  <Input
-                    type="time"
-                    value={newAvailability.end_time}
-                    onChange={(e) => handleAvailabilityChange("end_time", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleAddAvailability}>
-                  Guardar horario
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Horarios actuales</h3>
-                {availability.length === 0 ? (
-                  <p className="text-muted-foreground">No hay horarios configurados</p>
-                ) : (
-                  <div className="space-y-2">
-                    {availability.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-md">
-                        <div>
-                          <p className="font-medium">{getDayName(item.day_of_week)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
-                          </p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteAvailability(item.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>

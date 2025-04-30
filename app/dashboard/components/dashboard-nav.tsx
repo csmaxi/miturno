@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Calendar, Home, LogOut, Settings, Users, Clock, CalendarDays } from "lucide-react"
+import { Calendar, Home, LogOut, Settings, Users, Clock, CalendarDays, CalendarRange } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -48,16 +48,16 @@ export function DashboardNav({ user }: DashboardNavProps) {
       active: pathname === "/dashboard/services",
     },
     {
+      href: "/dashboard/availability",
+      label: "Disponibilidad",
+      icon: CalendarRange,
+      active: pathname === "/dashboard/availability",
+    },
+    {
       href: "/dashboard/team",
       label: "Equipo",
       icon: Users,
       active: pathname === "/dashboard/team",
-    },
-    {
-      href: "/dashboard/settings",
-      label: "Configuración",
-      icon: Settings,
-      active: pathname === "/dashboard/settings",
     },
   ]
 

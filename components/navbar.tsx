@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Calendar, Menu } from "lucide-react"
+import { Calendar, Menu, Settings } from "lucide-react"
 import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -74,9 +74,17 @@ export function Navbar({ user: propUser }: { user: any }) {
           <div className="flex items-center space-x-4">
             <ThemeSwitcher />
             {user ? (
-              <Button variant="ghost" onClick={handleSignOut}>
-                Cerrar sesión
-              </Button>
+              <>
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="/dashboard/settings" className="flex items-center">
+                    <Settings className="h-5 w-5" />
+                    <span className="sr-only">Configuración</span>
+                  </Link>
+                </Button>
+                <Button variant="ghost" onClick={handleSignOut}>
+                  Cerrar sesión
+                </Button>
+              </>
             ) : (
               <Button variant="ghost" asChild>
                 <Link href="/auth/login">Iniciar sesión</Link>
@@ -112,9 +120,14 @@ export function Navbar({ user: propUser }: { user: any }) {
                 </Link>
               ))}
               {user ? (
-                <button className="text-left text-sm font-medium hover:text-primary" onClick={handleSignOut}>
-                  Cerrar sesión
-                </button>
+                <>
+                  <Link href="/dashboard/settings" className="text-sm font-medium hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
+                    Configuración
+                  </Link>
+                  <button className="text-left text-sm font-medium hover:text-primary" onClick={handleSignOut}>
+                    Cerrar sesión
+                  </button>
+                </>
               ) : (
                 <Link href="/auth/login" className="text-sm font-medium hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
                   Iniciar sesión

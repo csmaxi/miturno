@@ -96,7 +96,7 @@ export default function AppointmentsPage() {
       if (error) throw error
 
       if (appointmentData && appointmentData.client_phone && (status === "confirmed" || status === "cancelled")) {
-        let message = status === "confirmed" 
+        let message = status === "confirmed"
           ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, userData)
           : formatAppointmentCancellationForClient(appointmentData, appointmentData.services, userData)
 
@@ -176,19 +176,19 @@ export default function AppointmentsPage() {
     setProcessingAction(true)
     try {
       const status = type === "confirm" ? "confirmed" : "cancelled"
-      
+
       const { error } = await supabase.from("appointments").update({ status }).eq("id", appointment.id)
       if (error) throw error
 
       const message = type === "confirm"
         ? formatAppointmentConfirmationForClient(appointment, appointment.services || {}, userData)
         : formatAppointmentCancellationForClient(appointment, appointment.services || {}, userData)
-      
+
       const whatsappLink = generateWhatsAppLink(appointment.client_phone, message)
       window.open(whatsappLink, "_blank")
 
       setActiveTab(status)
-      
+
       toast({
         title: "Estado actualizado",
         description: `El turno ha sido ${type === "confirm" ? "confirmado" : "cancelado"} exitosamente`,
@@ -207,27 +207,27 @@ export default function AppointmentsPage() {
   }, [supabase, userData, toast, fetchAppointments])
 
   // Memoizar los filtros de citas
-  const filteredAppointments = useMemo(() => 
+  const filteredAppointments = useMemo(() =>
     appointments.filter(app => app.status === activeTab),
     [appointments, activeTab]
   )
 
-  const pendingAppointments = useMemo(() => 
+  const pendingAppointments = useMemo(() =>
     appointments.filter(app => app.status === "pending"),
     [appointments]
   )
 
-  const confirmedAppointments = useMemo(() => 
+  const confirmedAppointments = useMemo(() =>
     appointments.filter(app => app.status === "confirmed"),
     [appointments]
   )
 
-  const completedAppointments = useMemo(() => 
+  const completedAppointments = useMemo(() =>
     appointments.filter(app => app.status === "completed"),
     [appointments]
   )
 
-  const cancelledAppointments = useMemo(() => 
+  const cancelledAppointments = useMemo(() =>
     appointments.filter(app => app.status === "cancelled"),
     [appointments]
   )
@@ -341,7 +341,9 @@ export default function AppointmentsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-10">Cargando turnos...</div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        </div>
       ) : appointments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">

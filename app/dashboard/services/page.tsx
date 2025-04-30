@@ -227,7 +227,9 @@ export default function ServicesPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-10">Cargando servicios...</div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        </div>
       ) : services.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
