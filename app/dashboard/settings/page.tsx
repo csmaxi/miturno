@@ -186,13 +186,13 @@ export default function SettingsPage() {
       const filePath = `${user.id}/${type}_${Date.now()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
-        .from("public")
+        .from("profiles")
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage
-        .from("public")
+        .from("profiles")
         .getPublicUrl(filePath)
 
       const updateData = type === "profile"
