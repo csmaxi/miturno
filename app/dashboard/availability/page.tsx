@@ -124,7 +124,7 @@ export default function AvailabilityPage() {
   }
 
   return (
-    <div className="container py-6">
+    <div className="md:container py-6">
       <Card>
         <CardHeader>
           <CardTitle>Disponibilidad</CardTitle>
@@ -134,12 +134,12 @@ export default function AvailabilityPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Select
                 value={newAvailability.day_of_week}
                 onValueChange={(value) => handleAvailabilityChange("day_of_week", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Día" />
                 </SelectTrigger>
                 <SelectContent>
@@ -152,55 +152,56 @@ export default function AvailabilityPage() {
                   <SelectItem value="0">Domingo</SelectItem>
                 </SelectContent>
               </Select>
-              <Select
-                value={newAvailability.start_time}
-                onValueChange={(value) => handleAvailabilityChange("start_time", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Desde" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 24 }, (_, i) => {
-                    const hour = i.toString().padStart(2, "0")
-                    return (
-                      <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
-                        {`${hour}:00`}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-              <Select
-                value={newAvailability.end_time}
-                onValueChange={(value) => handleAvailabilityChange("end_time", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Hasta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 24 }, (_, i) => {
-                    const hour = i.toString().padStart(2, "0")
-                    return (
-                      <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
-                        {`${hour}:00`}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAddAvailability}>Agregar</Button>
+              <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                <Select
+                  value={newAvailability.start_time}
+                  onValueChange={(value) => handleAvailabilityChange("start_time", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Desde" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => {
+                      const hour = i.toString().padStart(2, "0")
+                      return (
+                        <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
+                          {`${hour}:00`}
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={newAvailability.end_time}
+                  onValueChange={(value) => handleAvailabilityChange("end_time", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Hasta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => {
+                      const hour = i.toString().padStart(2, "0")
+                      return (
+                        <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
+                          {`${hour}:00`}
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleAddAvailability} className="w-full sm:w-auto">Agregar</Button>
             </div>
 
             <div className="space-y-2">
               {availability.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2"
                 >
-                  <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                     <span className="font-medium">{getDayName(item.day_of_week)}</span>
                     <span className="text-muted-foreground">
-                      {" "}
                       {item.start_time} - {item.end_time}
                     </span>
                   </div>
@@ -208,6 +209,7 @@ export default function AvailabilityPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDeleteAvailability(item.id)}
+                    className="self-end sm:self-auto"
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
