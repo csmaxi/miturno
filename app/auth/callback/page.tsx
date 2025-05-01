@@ -16,18 +16,18 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         // Procesar la redirección de OAuth
-        const { data, error } = await supabase.auth.getSession()
+        const { data: { user }, error } = await supabase.auth.getUser()
 
         if (error) {
           throw error
         }
 
-        if (data.session) {
+        if (user) {
           // Verificar si el usuario ya tiene un perfil
           const { data: userData, error: userError } = await supabase
             .from("users")
             .select("*")
-            .eq("id", data.session.user.id)
+            .eq("id", user.id)
             .single()
 
           if (userError && userError.code !== "PGRST116") {
@@ -40,7 +40,7 @@ export default function AuthCallback() {
             // Obtener el nombre de usuario preferido del localStorage
             const preferredUsername =
               localStorage.getItem("preferredUsername") ||
-              data.session.user.email?.split("@")[0] ||
+              user.email?.split("@")[0] ||
               `user${Date.now().toString().slice(-6)}`
 
             // Verificar si el nombre de usuario ya existe
@@ -57,12 +57,12 @@ export default function AuthCallback() {
 
             // Crear el perfil del usuario
             const { error: profileError } = await supabase.from("users").insert({
-              id: data.session.user.id,
-              email: data.session.user.email,
+              id: user.id,
+              email: user.email,
               username: finalUsername,
               full_name:
-                data.session.user.user_metadata.full_name || data.session.user.email?.split("@")[0] || "Usuario",
-              profile_description: `Página de ${data.session.user.user_metadata.full_name || "Usuario"}`,
+                user.user_metadata.full_name || user.email?.split("@")[0] || "Usuario",
+              profile_description: `Página de ${user.user_metadata.full_name || "Usuario"}`,
             })
 
             if (profileError) {
@@ -81,7 +81,7 @@ export default function AuthCallback() {
           // Redirigir al dashboard
           router.push("/dashboard")
         } else {
-          // Si no hay sesión, redirigir a la página de inicio de sesión
+          // Si no hay usuario, redirigir a la página de inicio de sesión
           router.push("/auth/login")
         }
       } catch (err: any) {

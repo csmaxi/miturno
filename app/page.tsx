@@ -44,12 +44,12 @@ export default function Home() {
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { user } } = await supabase.auth.getUser();
         
         if (!mounted) return;
 
-        if (session?.user) {
-          useAuthStore.setState({ user: session.user });
+        if (user) {
+          useAuthStore.setState({ user });
           checkUser();
         } else {
           useAuthStore.setState({ user: null, userData: null });
@@ -64,12 +64,15 @@ export default function Home() {
 
     initializeAuth();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string) => {
       if (!mounted) return;
 
-      if (event === "SIGNED_IN" && session) {
-        useAuthStore.setState({ user: session.user });
-        await checkUser();
+      if (event === "SIGNED_IN") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          useAuthStore.setState({ user });
+          await checkUser();
+        }
       } else if (event === "SIGNED_OUT") {
         useAuthStore.setState({ user: null, userData: null });
       }
