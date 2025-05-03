@@ -75,12 +75,6 @@ export function Navbar({ user: propUser }: { user: any }) {
             <ThemeSwitcher />
             {user ? (
               <>
-                <Button variant="ghost" size="icon" asChild>
-                  <Link href="/dashboard/settings" className="flex items-center">
-                    <Settings className="h-5 w-5" />
-                    <span className="sr-only">Configuración</span>
-                  </Link>
-                </Button>
                 <Button variant="ghost" onClick={handleSignOut}>
                   Cerrar sesión
                 </Button>
@@ -121,9 +115,6 @@ export function Navbar({ user: propUser }: { user: any }) {
               ))}
               {user ? (
                 <>
-                  <Link href="/dashboard/settings" className="text-sm font-medium hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
-                    Configuración
-                  </Link>
                   <button className="text-left text-sm font-medium hover:text-primary" onClick={handleSignOut}>
                     Cerrar sesión
                   </button>

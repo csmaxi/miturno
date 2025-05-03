@@ -59,6 +59,12 @@ export function DashboardNav({ user }: DashboardNavProps) {
       icon: Users,
       active: pathname === "/dashboard/team",
     },
+    {
+      href: "/dashboard/settings",
+      label: "Configuración",
+      icon: Settings,
+      active: pathname === "/dashboard/settings",
+    },
   ]
 
   // Versión móvil
