@@ -1,31 +1,24 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { ClientLayout } from "./components/client-layout";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "MiTurno.app - Gestiona tus citas fácilmente",
-  description: "Plataforma para gestionar turnos y citas con tu propia URL personalizada",
-    generator: 'v0.dev'
-}
+export const metadata = {
+  title: "MiTurno - Gestioná tus citas y turnos",
+  description: "Plataforma para gestionar citas y turnos con tu propia URL personalizada",
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es">
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
-  )
+  );
 }

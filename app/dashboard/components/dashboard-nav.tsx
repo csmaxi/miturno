@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { ThemeSwitcher } from "@/components/theme-switcher"
+
 
 interface DashboardNavProps {
   user: any
@@ -75,7 +75,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
         <span>MiTurno</span>
       </Link>
       <div className="flex items-center gap-2">
-        <ThemeSwitcher />
+       
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -159,7 +159,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
           <span>MiTurno</span>
         </Link>
         <div className="ml-auto">
-          <ThemeSwitcher />
+         
         </div>
       </div>
       <div className="flex-1 overflow-auto py-2">

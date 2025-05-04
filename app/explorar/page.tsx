@@ -1,6 +1,4 @@
 import { Suspense } from "react";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,39 +124,31 @@ export default async function ExplorarPage({
 }: {
   searchParams: { page?: string }
 }) {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
   const page = Number(searchParams.page) || 1;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar user={user} />
-      <main className="flex-1">
-        <div className="container px-4 py-12 md:px-6">
-          <div className="space-y-8">
-            <div className="text-center space-y-4">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                Explorar Perfiles
-              </h1>
-              <p className="text-gray-500 md:text-xl dark:text-gray-400 max-w-2xl mx-auto">
-                Descubre profesionales y servicios disponibles en MiTurno
-              </p>
-            </div>
+    <div className="container px-4 py-12 md:px-6">
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+            Explorar Perfiles
+          </h1>
+          <p className="text-gray-500 md:text-xl dark:text-gray-400 max-w-2xl mx-auto">
+            Descubre profesionales y servicios disponibles en MiTurno
+          </p>
+        </div>
 
-            <div className="max-w-md mx-auto">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Buscar por nombre o servicio..." className="pl-10" />
-              </div>
-            </div>
-
-            <Suspense fallback={<ProfilesSkeleton />}>
-              <ProfilesList page={page} />
-            </Suspense>
+        <div className="max-w-md mx-auto">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Buscar por nombre o servicio..." className="pl-10" />
           </div>
         </div>
-      </main>
-      <Footer />
+
+        <Suspense fallback={<ProfilesSkeleton />}>
+          <ProfilesList page={page} />
+        </Suspense>
+      </div>
     </div>
   );
 }

@@ -128,6 +128,32 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
     try {
       const supabase = createClientSupabaseClient()
 
+      // Verificar el plan de suscripción del usuario
+      const { data: userData, error: userError } = await supabase.from("users").select("subscription_plan").eq("id", userId).single()
+
+      if (userError) throw userError
+
+      const plan = userData.subscription_plan
+
+      // Contar los turnos del mes actual
+      const { data: monthlyAppointments, error: countError } = await supabase
+        .from("appointments")
+        .select("id")
+        .eq("user_id", userId)
+        .gte("appointment_date", new Date().toISOString().slice(0, 7) + "-01")
+        .lt("appointment_date", new Date().toISOString().slice(0, 7) + "-32")
+
+      if (countError) throw countError
+
+      const monthlyAppointmentsCount = monthlyAppointments.length
+
+      // Verificar límites según el plan
+      if (plan === "free" && monthlyAppointmentsCount >= 15) {
+        throw new Error("Límite de turnos alcanzado. Actualiza tu plan.")
+      } else if (plan === "basic" && monthlyAppointmentsCount >= 30) {
+        throw new Error("Límite de turnos alcanzado. Actualiza tu plan.")
+      }
+
       const selectedService = services.find((s) => s.id === formData.serviceId)
       const serviceDuration = selectedService ? selectedService.duration : 30
 
