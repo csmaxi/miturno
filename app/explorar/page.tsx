@@ -1,11 +1,14 @@
-import { Suspense } from "react";
+"use client";
+
+import { Suspense, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createBrowserClient } from "@supabase/ssr";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // Definir interfaz para los datos de usuarios
 interface UserData {
@@ -40,19 +43,46 @@ const ProfilesSkeleton = () => (
 );
 
 // Componente para la lista de perfiles
-const ProfilesList = async ({ page }: { page: number }) => {
-  const supabase = createServerSupabaseClient();
-  const pageSize = 12;
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize - 1;
+const ProfilesList = ({ page, searchQuery }: { page: number; searchQuery: string }) => {
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  const { data: users, count } = await supabase
-    .from("users")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(start, end);
+  const fetchUsers = async () => {
+    setLoading(true);
+    const pageSize = 12;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize - 1;
 
-  const totalPages = Math.ceil((count || 0) / pageSize);
+    let query = supabase
+      .from("users")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false });
+
+    if (searchQuery) {
+      query = query.or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,profile_title.ilike.%${searchQuery}%`);
+    }
+
+    const { data, count } = await query.range(start, end);
+
+    if (data) {
+      setUsers(data);
+      setTotalPages(Math.ceil((count || 0) / pageSize));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [page, searchQuery]);
+
+  if (loading) {
+    return <ProfilesSkeleton />;
+  }
 
   if (!users || users.length === 0) {
     return (
@@ -103,7 +133,7 @@ const ProfilesList = async ({ page }: { page: number }) => {
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
             <Link
               key={pageNum}
-              href={`/explorar?page=${pageNum}`}
+              href={`/explorar?page=${pageNum}${searchQuery ? `&search=${searchQuery}` : ''}`}
               className={`px-4 py-2 rounded-md ${
                 pageNum === page
                   ? "bg-primary text-primary-foreground"
@@ -119,12 +149,24 @@ const ProfilesList = async ({ page }: { page: number }) => {
   );
 };
 
-export default async function ExplorarPage({
+export default function ExplorarPage({
   searchParams,
 }: {
-  searchParams: { page?: string }
+  searchParams: { page?: string; search?: string }
 }) {
+  const router = useRouter();
   const page = Number(searchParams.page) || 1;
+  const [searchQuery, setSearchQuery] = useState(searchParams.search || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.search || "");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      router.push(`/explorar?page=1${searchQuery ? `&search=${searchQuery}` : ''}`);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, router]);
 
   return (
     <div className="container px-4 py-12 md:px-6">
@@ -141,13 +183,16 @@ export default async function ExplorarPage({
         <div className="max-w-md mx-auto">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre o servicio..." className="pl-10" />
+            <Input 
+              placeholder="Buscar por nombre o servicio..." 
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
-        <Suspense fallback={<ProfilesSkeleton />}>
-          <ProfilesList page={page} />
-        </Suspense>
+        <ProfilesList page={page} searchQuery={debouncedSearch} />
       </div>
     </div>
   );

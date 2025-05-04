@@ -70,10 +70,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
   // Versión móvil
   const MobileNav = () => (
     <div className="md:hidden flex items-center justify-between w-full border-b px-4 h-14">
-      <Link href="/" className="flex items-center gap-2 font-semibold">
-        <Calendar className="h-6 w-6" />
-        <span>MiTurno</span>
-      </Link>
+     
       <div className="flex items-center gap-2">
        
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -103,12 +100,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               <SheetTitle>Menú de navegación</SheetTitle>
             </SheetHeader>
             <div className="flex flex-col h-full">
-              <div className="flex h-14 items-center border-b px-4">
-                <Link href="/" className="flex items-center gap-2 font-semibold">
-                  <Calendar className="h-6 w-6" />
-                  <span>MiTurno</span>
-                </Link>
-              </div>
+              
               <div className="flex-1 overflow-auto py-2">
                 <nav className="grid items-start px-2 text-sm font-medium">
                   {routes.map((route) => (
@@ -153,15 +145,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
   // Versión desktop
   const DesktopNav = () => (
     <div className="hidden md:flex flex-col w-64 border-r bg-muted/40 h-screen">
-      <div className="flex h-14 items-center border-b px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Calendar className="h-6 w-6" />
-          <span>MiTurno</span>
-        </Link>
-        <div className="ml-auto">
-         
-        </div>
-      </div>
+     
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-2 text-sm font-medium">
           {routes.map((route) => (
