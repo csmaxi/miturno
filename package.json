@@ -31,6 +31,7 @@
     "cmdk": "^0.2.1",
     "critters": "^0.0.25",
     "date-fns": "^2.30.0",
+    "framer-motion": "^12.9.4",
     "input-otp": "^1.1.0",
     "lucide-react": "^0.350.0",
     "mercadopago": "^2.5.0",

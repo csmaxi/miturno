@@ -9,22 +9,34 @@ import { AuthChangeEvent } from "@supabase/supabase-js"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { Menu, X } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { motion, AnimatePresence } from "framer-motion"
+import { useToast } from "@/hooks/use-toast"
 
 export function Navbar() {
   const { user, checkUser } = useAuthStore()
   const supabase = createClientSupabaseClient()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        setIsLoading(true)
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           useAuthStore.setState({ user })
-          checkUser()
+          await checkUser()
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
+        toast({
+          title: "Error",
+          description: "No se pudo cargar la sesión",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -45,20 +57,59 @@ export function Navbar() {
     return () => {
       authListener.subscription.unsubscribe()
     }
-  }, [supabase, checkUser])
+  }, [supabase, checkUser, toast])
+
+  const handleSignOut = async () => {
+    try {
+      setIsLoading(true)
+      await supabase.auth.signOut()
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar la sesión",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+      setIsMobileMenuOpen(false)
+    }
+  }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header 
+      className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      role="banner"
+    >
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+          <Link 
+            href="/" 
+            className="mr-6 flex items-center space-x-2"
+            aria-label="Ir al inicio"
+          >
             <span className="font-bold">MiTurno</span>
           </Link>
-          <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <Link href="/explorar" className="transition-colors hover:text-foreground/80 text-foreground/60">
+          <nav 
+            className="hidden md:flex items-center space-x-6 text-sm font-medium"
+            role="navigation"
+            aria-label="Navegación principal"
+          >
+            <Link 
+              href="/explorar" 
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+              aria-label="Explorar servicios"
+            >
               Explorar
             </Link>
-            <Link href="/pricing" className="transition-colors hover:text-foreground/80 text-foreground/60">
+            <Link 
+              href="/pricing" 
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+              aria-label="Ver precios"
+            >
               Precios
             </Link>
           </nav>
@@ -69,33 +120,73 @@ export function Navbar() {
             <div className="hidden md:flex items-center space-x-4">
               <Button
                 variant="ghost"
-                onClick={async () => {
-                  await supabase.auth.signOut()
-                }}
+                onClick={handleSignOut}
+                disabled={isLoading}
+                aria-label="Cerrar sesión"
               >
-                Cerrar sesión
+                {isLoading ? "Cerrando..." : "Cerrar sesión"}
               </Button>
             </div>
           ) : (
             <div className="hidden md:flex items-center space-x-2">
-              <Button asChild variant="ghost">
+              <Button 
+                asChild 
+                variant="ghost"
+                aria-label="Iniciar sesión"
+              >
                 <Link href="/auth/login">Iniciar sesión</Link>
               </Button>
             </div>
           )}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Abrir menú</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden"
+                aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              >
+                <AnimatePresence mode="wait">
+                  {isMobileMenuOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ opacity: 0, rotate: -90 }}
+                      animate={{ opacity: 1, rotate: 0 }}
+                      exit={{ opacity: 0, rotate: 90 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X className="h-5 w-5" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ opacity: 0, rotate: 90 }}
+                      animate={{ opacity: 1, rotate: 0 }}
+                      exit={{ opacity: 0, rotate: -90 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu className="h-5 w-5" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col space-y-4 mt-4">
+            <SheetContent 
+              side="right" 
+              className="w-[300px] sm:w-[400px]"
+              role="dialog"
+              aria-label="Menú de navegación"
+            >
+              <nav 
+                className="flex flex-col space-y-4 mt-4"
+                role="navigation"
+                aria-label="Navegación móvil"
+              >
                 <Link 
                   href="/explorar" 
                   className="text-sm font-medium transition-colors hover:text-foreground/80 text-foreground/60"
                   onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Explorar servicios"
                 >
                   Explorar
                 </Link>
@@ -103,6 +194,7 @@ export function Navbar() {
                   href="/pricing" 
                   className="text-sm font-medium transition-colors hover:text-foreground/80 text-foreground/60"
                   onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Ver precios"
                 >
                   Precios
                 </Link>
@@ -110,16 +202,23 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     className="justify-start"
-                    onClick={async () => {
-                      await supabase.auth.signOut()
-                      setIsMobileMenuOpen(false)
-                    }}
+                    onClick={handleSignOut}
+                    disabled={isLoading}
+                    aria-label="Cerrar sesión"
                   >
-                    Cerrar sesión
+                    {isLoading ? "Cerrando..." : "Cerrar sesión"}
                   </Button>
                 ) : (
-                  <Button asChild variant="ghost" className="justify-start">
-                    <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button 
+                    asChild 
+                    variant="ghost" 
+                    className="justify-start"
+                    aria-label="Iniciar sesión"
+                  >
+                    <Link 
+                      href="/auth/login" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
                       Iniciar sesión
                     </Link>
                   </Button>
