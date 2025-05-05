@@ -9,21 +9,121 @@ const client = new MercadoPagoConfig({
 
 export async function POST(request: Request) {
   try {
-    const { payment_id, status, external_reference } = await request.json()
+    // Obtener parámetros de la URL
+    const url = new URL(request.url)
+    const topic = url.searchParams.get("topic")
+    const id = url.searchParams.get("id")
+    const type = url.searchParams.get("type")
+    const dataId = url.searchParams.get("data.id")
 
-    // Verificar el pago en MercadoPago
+    console.log("Webhook received:", { topic, id, type, dataId })
+
+    // Determinar el ID correcto basado en el tipo de notificación
+    const paymentId = type === "payment" ? dataId : id
+
+    if (!paymentId) {
+      console.error("No payment ID provided")
+      return NextResponse.json(
+        { error: "ID no proporcionado" },
+        { status: 400 }
+      )
+    }
+
+    // Verificar si la suscripción ya existe
+    const supabase = createServerSupabaseClient()
+    const { data: existingSubscription } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("mercadopago_subscription_id", paymentId)
+      .single()
+
+    if (existingSubscription) {
+      console.log("Subscription already exists:", existingSubscription)
+      return NextResponse.json({ success: true, message: "Subscription already exists" })
+    }
+
+    if (topic === "merchant_order") {
+      if (!id) {
+        console.error("No merchant order ID provided")
+        return NextResponse.json(
+          { error: "ID de orden no proporcionado" },
+          { status: 400 }
+        )
+      }
+
+      try {
+        const merchantOrder = new MerchantOrder(client)
+        const orderInfo = await merchantOrder.get({ merchantOrderId: id })
+
+        console.log("Merchant order info:", orderInfo)
+
+        if (orderInfo.status === "paid" && orderInfo.external_reference && orderInfo.payments && orderInfo.payments.length > 0) {
+          const { userId, plan } = JSON.parse(orderInfo.external_reference)
+          const paymentId = orderInfo.payments[0].id
+
+          const { error } = await supabase
+            .from("subscriptions")
+            .insert({
+              user_id: userId,
+              plan: plan.toLowerCase(),
+              status: "active",
+              mercadopago_subscription_id: paymentId,
+              current_period_start: new Date().toISOString(),
+              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            })
+
+          if (error) {
+            console.error("Error creating subscription from merchant order:", error)
+            return NextResponse.json(
+              { error: "Error al crear la suscripción" },
+              { status: 500 }
+            )
+          }
+        }
+      } catch (error) {
+        console.error("Error processing merchant order:", error)
+        // Si falla el procesamiento de la orden, intentamos con el pago
+        return handlePayment(paymentId)
+      }
+    } else {
+      return handlePayment(paymentId)
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error("Error processing subscription:", error)
+    return NextResponse.json(
+      { error: error.message || "Error al procesar la suscripción" },
+      { status: 500 }
+    )
+  }
+}
+
+async function handlePayment(paymentId: string) {
+  try {
     const payment = new Payment(client)
-    const paymentInfo = await payment.get({ id: payment_id })
+    const paymentInfo = await payment.get({ id: paymentId })
+
+    console.log("Payment info:", paymentInfo)
 
     if (paymentInfo.status !== "approved") {
+      console.error("Payment not approved:", paymentInfo.status)
       return NextResponse.json(
         { error: "El pago no fue aprobado" },
         { status: 400 }
       )
     }
 
+    if (!paymentInfo.external_reference) {
+      console.error("No external reference found in payment")
+      return NextResponse.json(
+        { error: "Referencia externa no encontrada" },
+        { status: 400 }
+      )
+    }
+
     // Parsear la referencia externa
-    const { userId, plan } = JSON.parse(external_reference)
+    const { userId, plan } = JSON.parse(paymentInfo.external_reference)
 
     // Crear la suscripción en la base de datos
     const supabase = createServerSupabaseClient()
@@ -33,7 +133,7 @@ export async function POST(request: Request) {
         user_id: userId,
         plan: plan.toLowerCase(),
         status: "active",
-        mercadopago_subscription_id: payment_id,
+        mercadopago_subscription_id: paymentId,
         current_period_start: new Date().toISOString(),
         current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       })
@@ -48,9 +148,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error("Error processing subscription:", error)
+    console.error("Error handling payment:", error)
     return NextResponse.json(
-      { error: error.message || "Error al procesar la suscripción" },
+      { error: error.message || "Error al procesar el pago" },
       { status: 500 }
     )
   }
