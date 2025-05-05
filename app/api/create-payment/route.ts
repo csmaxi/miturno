@@ -9,6 +9,10 @@ const client = new MercadoPagoConfig({
 export async function POST(request: Request) {
   try {
     const { plan, price, userId } = await request.json()
+    console.log("Creating payment for:", { plan, price, userId })
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    console.log("Using base URL:", baseUrl)
 
     // Crear preferencia de pago
     const preference = new Preference(client)
@@ -24,11 +28,12 @@ export async function POST(request: Request) {
           },
         ],
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
-          failure: `${process.env.NEXT_PUBLIC_APP_URL}/payment/failure`,
-          pending: `${process.env.NEXT_PUBLIC_APP_URL}/payment/pending`,
+          success: `${baseUrl}/payment/success`,
+          failure: `${baseUrl}/payment/failure`,
+          pending: `${baseUrl}/payment/pending`,
         },
-        notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/create-subscription`,
+        auto_return: "approved",
+        notification_url: `${baseUrl}/api/webhooks/mercadopago`,
         external_reference: JSON.stringify({
           userId,
           plan,
@@ -42,6 +47,8 @@ export async function POST(request: Request) {
         }
       }
     })
+
+    console.log("Payment preference created:", result)
 
     return NextResponse.json({
       init_point: result.init_point,

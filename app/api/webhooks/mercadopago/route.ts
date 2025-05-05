@@ -10,13 +10,14 @@ const client = new MercadoPagoConfig({
 // Webhook handler para MercadoPago
 export async function PUT(request: Request) {
   try {
+    console.log("Webhook received - Full URL:", request.url)
     const url = new URL(request.url)
     const topic = url.searchParams.get("topic")
     const id = url.searchParams.get("id")
     const type = url.searchParams.get("type")
     const dataId = url.searchParams.get("data.id")
 
-    console.log("Webhook received:", { topic, id, type, dataId })
+    console.log("Webhook parameters:", { topic, id, type, dataId })
 
     // Determinar el ID correcto basado en el tipo de notificación
     const paymentId = type === "payment" ? dataId : id
@@ -34,10 +35,11 @@ export async function PUT(request: Request) {
         const payment = new Payment(client)
         const paymentInfo = await payment.get({ id: paymentId })
 
-        console.log("Payment info:", paymentInfo)
+        console.log("Payment info:", JSON.stringify(paymentInfo, null, 2))
 
         if (paymentInfo.status === "approved" && paymentInfo.external_reference) {
           const { userId, plan } = JSON.parse(paymentInfo.external_reference)
+          console.log("Processing approved payment for user:", userId, "plan:", plan)
 
           const supabase = createServerSupabaseClient()
           const { error } = await supabase
@@ -57,6 +59,7 @@ export async function PUT(request: Request) {
               { status: 500 }
             )
           }
+          console.log("Subscription updated successfully")
         }
       } catch (error) {
         console.error("Error processing payment webhook:", error)
@@ -90,14 +93,16 @@ async function handleMerchantOrder(orderId: string | null) {
   }
 
   try {
+    console.log("Processing merchant order:", orderId)
     const merchantOrder = new MerchantOrder(client)
     const orderInfo = await merchantOrder.get({ merchantOrderId: orderId })
 
-    console.log("Merchant order info:", orderInfo)
+    console.log("Merchant order info:", JSON.stringify(orderInfo, null, 2))
 
     if (orderInfo.status === "paid" && orderInfo.external_reference && orderInfo.payments && orderInfo.payments.length > 0) {
       const { userId, plan } = JSON.parse(orderInfo.external_reference)
       const paymentId = orderInfo.payments[0].id
+      console.log("Processing paid order for user:", userId, "plan:", plan)
 
       const supabase = createServerSupabaseClient()
       const { error } = await supabase
@@ -117,6 +122,7 @@ async function handleMerchantOrder(orderId: string | null) {
           { status: 500 }
         )
       }
+      console.log("Subscription updated successfully from merchant order")
     }
 
     return NextResponse.json({ success: true })
