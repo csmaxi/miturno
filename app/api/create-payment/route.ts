@@ -24,9 +24,9 @@ export async function POST(request: Request) {
           },
         ],
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?status=success`,
-          failure: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?status=failure`,
-          pending: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?status=pending`,
+          success: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
+          failure: `${process.env.NEXT_PUBLIC_APP_URL}/payment/failure`,
+          pending: `${process.env.NEXT_PUBLIC_APP_URL}/payment/pending`,
         },
         notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/create-subscription`,
         external_reference: JSON.stringify({
