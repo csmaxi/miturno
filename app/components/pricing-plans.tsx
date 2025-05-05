@@ -27,7 +27,7 @@ const PLANS = [
   },
   {
     name: "Basic",
-    price: 4990,
+    price: 1,
     features: [
       "30 turnos por mes",
       "5 servicios",
@@ -44,7 +44,7 @@ const PLANS = [
   },
   {
     name: "Pro",
-    price: 9990,
+    price: 2,
     features: [
       "Turnos ilimitados",
       "Servicios ilimitados",
