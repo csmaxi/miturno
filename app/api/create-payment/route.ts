@@ -20,6 +20,7 @@ export async function POST(request: Request) {
             title: `Plan ${plan} - MiTurno`,
             unit_price: Number(price),
             quantity: 1,
+            currency_id: "ARS"
           },
         ],
         back_urls: {
@@ -27,11 +28,18 @@ export async function POST(request: Request) {
           failure: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?status=failure`,
           pending: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscription?status=pending`,
         },
-        auto_return: "approved",
+        notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/create-subscription`,
         external_reference: JSON.stringify({
           userId,
           plan,
         }),
+        payment_methods: {
+          excluded_payment_types: [
+            { id: "ticket" },
+            { id: "atm" }
+          ],
+          installments: 1
+        }
       }
     })
 
