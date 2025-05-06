@@ -1,6 +1,7 @@
 import { PricingPlans } from "../components/pricing-plans"
 import { Metadata } from "next"
 import { Navbar } from "@/components/navbar"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
   title: "Precios | MiTurno",
@@ -35,10 +36,15 @@ const faqs = [
   }
 ]
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = createServerSupabaseClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar user={null} />
+      <Navbar user={session?.user ?? null} />
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">

@@ -159,6 +159,19 @@ export default function ExplorarPage({
   const page = Number(searchParams.page) || 1;
   const [searchQuery, setSearchQuery] = useState(searchParams.search || "");
   const [debouncedSearch, setDebouncedSearch] = useState(searchParams.search || "");
+  const [session, setSession] = useState<any>(null);
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+    };
+    getSession();
+  }, [supabase]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -171,7 +184,7 @@ export default function ExplorarPage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar user={null} />
+      <Navbar user={session?.user ?? null} />
       <div className="container px-4 py-12 md:px-6">
         <div className="space-y-8">
           <div className="text-center space-y-4">
