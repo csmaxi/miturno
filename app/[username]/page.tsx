@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/avatar";
 import { Calendar, Clock, Users, Instagram } from "lucide-react";
 import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
@@ -196,7 +196,7 @@ export default async function UserProfilePage({
                   <CardContent className="grid gap-6 md:grid-cols-3">
                     {safeTeamMembers.map((member) => (
                       <div key={member.id} className="flex flex-col items-center text-center">
-                        <Avatar className="h-16 w-16 mb-2">
+                        <Avatar className="h-32 w-32 mb-2">
                           {member.image_url ? (
                             <OptimizedImage
                               src={member.image_url}
@@ -257,7 +257,7 @@ export default async function UserProfilePage({
           </div>
         </div>
       </main>
-      <Footer />
+
     </div>
   );
 }

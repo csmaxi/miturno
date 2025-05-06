@@ -9,6 +9,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { Calendar, Clock, Share2, Users } from "lucide-react";
 import { Session } from '@supabase/supabase-js';
+import { Navbar } from "@/components/navbar";
 
 // Interfaces para tipado
 interface UserData {
@@ -137,7 +138,8 @@ export default function Home() {
   }, [handleUsernameSubmit]);
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
       {user ? (
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
@@ -224,6 +226,6 @@ export default function Home() {
           </section>
         </>
       )}
-    </>
+    </div>
   );
 }

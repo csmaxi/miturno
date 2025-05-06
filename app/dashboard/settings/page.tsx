@@ -229,10 +229,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container py-6">
-      <Tabs defaultValue="profile">
-        <TabsList>
-          <TabsTrigger value="profile">Perfil</TabsTrigger>
+    <div className="container py-4 md:py-6">
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="w-full md:w-auto">
+          <TabsTrigger value="profile" className="flex-1 md:flex-none">Perfil</TabsTrigger>
         </TabsList>
         <TabsContent value="profile">
           <Card>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
               <CardDescription>Actualiza tu información pública</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1 space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="full_name">Nombre del negocio</Label>
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="username">Nombre de usuario</Label>
                     <div className="flex">
-                      <span className="flex items-center bg-muted px-3 rounded-l-md border border-r-0 border-input">
+                      <span className="flex items-center bg-muted px-3 rounded-l-md border border-r-0 border-input text-sm">
                         miturno.app/
                       </span>
                       <Input
@@ -276,9 +276,9 @@ export default function SettingsPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                           <SelectValue placeholder="Seleccionar país" />
                         </SelectTrigger>
                         <SelectContent>
@@ -329,7 +329,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="md:w-1/3 space-y-6">
+                <div className="lg:w-1/3 space-y-6">
                   <div className="space-y-2">
                     <Label>Imagen de perfil</Label>
                     <div className="flex flex-col items-center gap-4">
@@ -387,8 +387,8 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button onClick={handleSaveProfile} disabled={saving}>
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleSaveProfile} disabled={saving} className="w-full sm:w-auto">
                   {saving ? "Guardando..." : "Guardar cambios"}
                 </Button>
               </div>

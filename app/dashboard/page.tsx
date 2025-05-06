@@ -83,7 +83,7 @@ const StatsSection = async ({ userId }: { userId: string }) => {
   ]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Servicios</CardTitle>
@@ -185,9 +185,9 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button asChild>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+        <Button asChild className="w-full sm:w-auto">
           <Link href={`/${userData?.username}`} target="_blank">
             <ExternalLink className="mr-2 h-4 w-4" />
             Ver mi página

@@ -266,67 +266,74 @@ export default function AppointmentsPage() {
                 {appointment.team_members && <Badge variant="secondary">{appointment.team_members.name}</Badge>}
                 {getStatusBadge(appointment.status)}
               </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {/* Botones de acción y notas */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  {appointment.status === "pending" && (
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-green-600 flex-1"
+                        onClick={() => handleStatusChange(appointment.id, "confirmed")}
+                        disabled={processingAction}
+                      >
+                        <Check className="mr-2 h-4 w-4" />
+                        Confirmar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 flex-1"
+                        onClick={() => handleStatusChange(appointment.id, "cancelled")}
+                        disabled={processingAction}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+                  {appointment.status === "confirmed" && (
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-600 flex-1"
+                        onClick={() => handleStatusChange(appointment.id, "completed")}
+                        disabled={processingAction}
+                      >
+                        <Check className="mr-2 h-4 w-4" />
+                        Completar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 flex-1"
+                        onClick={() => handleStatusChange(appointment.id, "cancelled")}
+                        disabled={processingAction}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => openNotesDialog(appointment)}
+                    className="w-full sm:w-auto"
+                  >
+                    {appointment.notes ? "Editar notas" : "Agregar notas"}
+                  </Button>
+                </div>
+              </div>
+
               {appointment.notes && (
-                <div className="mt-4 text-sm">
+                <div className="mt-4 text-sm border-t pt-4">
                   <p className="font-medium">Notas:</p>
                   <p className="text-muted-foreground">{appointment.notes}</p>
                 </div>
               )}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => openNotesDialog(appointment)}>
-                  {appointment.notes ? "Editar notas" : "Agregar notas"}
-                </Button>
-
-                {/* Botones de acción */}
-                {appointment.status === "pending" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-green-600"
-                      onClick={() => handleStatusChange(appointment.id, "confirmed")}
-                      disabled={processingAction}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Confirmar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600"
-                      onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                      disabled={processingAction}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancelar
-                    </Button>
-                  </>
-                )}
-                {appointment.status === "confirmed" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-blue-600"
-                      onClick={() => handleStatusChange(appointment.id, "completed")}
-                      disabled={processingAction}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Completar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600"
-                      onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                      disabled={processingAction}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancelar
-                    </Button>
-                  </>
-                )}
-              </div>
             </CardContent>
           </Card>
         ))}

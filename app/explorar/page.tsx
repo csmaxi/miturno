@@ -9,6 +9,7 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Navbar } from "@/components/navbar";
 
 // Definir interfaz para los datos de usuarios
 interface UserData {
@@ -169,30 +170,33 @@ export default function ExplorarPage({
   }, [searchQuery, router]);
 
   return (
-    <div className="container px-4 py-12 md:px-6">
-      <div className="space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-            Explorar Perfiles
-          </h1>
-          <p className="text-gray-500 md:text-xl dark:text-gray-400 max-w-2xl mx-auto">
-            Descubre profesionales y servicios disponibles en MiTurno
-          </p>
-        </div>
-
-        <div className="max-w-md mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar por nombre o servicio..." 
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="container px-4 py-12 md:px-6">
+        <div className="space-y-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+              Explorar Perfiles
+            </h1>
+            <p className="text-gray-500 md:text-xl dark:text-gray-400 max-w-2xl mx-auto">
+              Descubre profesionales y servicios disponibles en MiTurno
+            </p>
           </div>
-        </div>
 
-        <ProfilesList page={page} searchQuery={debouncedSearch} />
+          <div className="max-w-md mx-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar por nombre o servicio..." 
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <ProfilesList page={page} searchQuery={debouncedSearch} />
+        </div>
       </div>
     </div>
   );

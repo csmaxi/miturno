@@ -283,7 +283,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       </div>
       <div className="space-y-2">
         <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Seleccionar país" />
