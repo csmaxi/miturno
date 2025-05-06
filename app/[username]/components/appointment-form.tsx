@@ -48,6 +48,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
     name: "",
     email: "",
     phone: "",
+    displayPhone: "",
     serviceId: "",
     teamMemberId: "",
     time: "",
@@ -59,7 +60,18 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (name === "phone") {
+      // Remover cualquier caracter que no sea número
+      const numbersOnly = value.replace(/\D/g, "")
+      // Actualizar tanto el número mostrado como el número completo
+      setFormData(prev => ({
+        ...prev,
+        displayPhone: numbersOnly,
+        phone: `${selectedCountry.prefix}${numbersOnly}`
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleCountryChange = (value: string) => {
@@ -67,11 +79,11 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
     setSelectedCountry(country)
     
     // Actualizar el número de teléfono con el nuevo prefijo
-    const currentPhone = formData.phone
-    const phoneWithoutPrefix = currentPhone.replace(/^\+\d+/, "").trim()
+    const currentPhone = formData.displayPhone
     setFormData(prev => ({
       ...prev,
-      phone: `${country.prefix} ${phoneWithoutPrefix}`
+      phone: `${country.prefix}${currentPhone}`,
+      displayPhone: currentPhone
     }))
   }
 
@@ -128,36 +140,40 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
     try {
       const supabase = createClientSupabaseClient()
 
-      // Verificar el plan de suscripción del usuario
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from("subscriptions")
-        .select("plan")
-        .eq("user_id", userId)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
-
-      if (subscriptionError && subscriptionError.code !== "PGRST116") throw subscriptionError
-
-      const plan = subscriptionData?.plan || "free"
-
       // Obtener el primer y último día del mes actual
       const now = new Date()
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-      // Contar los turnos del mes actual
-      const { data: monthlyAppointments, error: countError } = await supabase
-        .from("appointments")
-        .select("id")
-        .eq("user_id", userId)
-        .gte("appointment_date", format(firstDayOfMonth, "yyyy-MM-dd"))
-        .lte("appointment_date", format(lastDayOfMonth, "yyyy-MM-dd"))
+      // Realizar todas las consultas necesarias en paralelo
+      const [
+        { data: subscriptionData },
+        { data: monthlyAppointments },
+        { data: ownerData }
+      ] = await Promise.all([
+        supabase
+          .from("subscriptions")
+          .select("plan")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single(),
+        supabase
+          .from("appointments")
+          .select("id")
+          .eq("user_id", userId)
+          .gte("appointment_date", format(firstDayOfMonth, "yyyy-MM-dd"))
+          .lte("appointment_date", format(lastDayOfMonth, "yyyy-MM-dd")),
+        supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single()
+      ])
 
-      if (countError) throw countError
-
-      const monthlyAppointmentsCount = monthlyAppointments.length
+      const plan = subscriptionData?.plan || "free"
+      const monthlyAppointmentsCount = monthlyAppointments?.length || 0
 
       // Verificar límites según el plan
       if (plan === "free" && monthlyAppointmentsCount >= 15) {
@@ -176,8 +192,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
       const endTime = new Date(startTime.getTime() + serviceDuration * 60000)
       const endTimeString = format(endTime, "HH:mm")
-
-      // Asegurarse de que la fecha esté en el formato correcto
       const formattedDate = format(date, "yyyy-MM-dd")
 
       // Crear la cita
@@ -202,11 +216,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
         .single()
 
       if (error) throw error
-
-      // Obtener datos del propietario para enviar notificación
-      const { data: ownerData, error: ownerError } = await supabase.from("users").select("*").eq("id", userId).single()
-
-      if (ownerError) throw ownerError
 
       // Enviar notificación al propietario por WhatsApp
       if (ownerData && ownerData.phone && appointmentData) {
@@ -235,6 +244,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
         name: "",
         email: "",
         phone: "",
+        displayPhone: "",
         serviceId: "",
         teamMemberId: "",
         time: "",
@@ -315,15 +325,15 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
             id="phone"
             name="phone"
             type="tel"
-            value={formData.phone}
+            value={formData.displayPhone}
             onChange={handleChange}
-            placeholder={`Ej: ${selectedCountry.prefix} 11 1234-5678`}
+            placeholder="Ej: 9112345678"
             required
             className="flex-1"
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Necesario para recibir confirmaciones y recordatorios de tu turno.
+          Ingresa tu número sin espacios ni guiones. Ejemplo: 9112345678
         </p>
       </div>
       <div className="space-y-2">
