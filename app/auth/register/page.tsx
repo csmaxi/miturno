@@ -56,7 +56,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <Navbar user={null} />
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">

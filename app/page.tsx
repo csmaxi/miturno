@@ -139,7 +139,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <Navbar user={null} />
       {user ? (
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">

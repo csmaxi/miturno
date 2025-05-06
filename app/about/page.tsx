@@ -12,7 +12,7 @@ export default async function AboutPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar user={session?.user} />
+      <Navbar user={session?.user ?? null} />
       <main className="flex-1">
         <div className="container px-4 py-12 md:px-6">
           <div className="mx-auto max-w-4xl space-y-10">

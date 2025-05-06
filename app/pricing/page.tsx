@@ -38,7 +38,7 @@ const faqs = [
 export default function PricingPage() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <Navbar user={null} />
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">

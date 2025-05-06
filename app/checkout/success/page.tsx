@@ -36,7 +36,7 @@ export default function CheckoutSuccessPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col">
-        <Navbar user={undefined} />
+        <Navbar user={null} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">Cargando...</div>
         </main>
@@ -47,7 +47,7 @@ export default function CheckoutSuccessPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar user={undefined} />
+      <Navbar user={null} />
       <main className="flex-1">
         <div className="container px-4 py-12 md:px-6">
           <div className="mx-auto max-w-md space-y-8">
