@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 
 export default async function PrivacyPage() {
@@ -114,7 +114,7 @@ export default async function PrivacyPage() {
           </div>
         </div>
       </main>
-      <Footer />
+   
     </div>
   )
 }

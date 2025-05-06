@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 
 export default async function TermsPage() {
@@ -98,7 +98,7 @@ export default async function TermsPage() {
           </div>
         </div>
       </main>
-      <Footer />
+     
     </div>
   )
 }

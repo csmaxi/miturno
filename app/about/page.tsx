@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Calendar, Users, Clock, Shield } from "lucide-react"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
@@ -109,7 +109,7 @@ export default async function AboutPage() {
           </div>
         </div>
       </main>
-      <Footer />
+    
     </div>
   )
 }

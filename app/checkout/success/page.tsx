@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
@@ -40,7 +40,7 @@ export default function CheckoutSuccessPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">Cargando...</div>
         </main>
-        <Footer />
+      
       </div>
     )
   }
@@ -103,7 +103,7 @@ export default function CheckoutSuccessPage() {
           </div>
         </div>
       </main>
-      <Footer />
+     
     </div>
   )
 }
