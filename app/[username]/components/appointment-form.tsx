@@ -129,19 +129,31 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       const supabase = createClientSupabaseClient()
 
       // Verificar el plan de suscripción del usuario
-      const { data: userData, error: userError } = await supabase.from("users").select("subscription_plan").eq("id", userId).single()
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from("subscriptions")
+        .select("plan")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
 
-      if (userError) throw userError
+      if (subscriptionError && subscriptionError.code !== "PGRST116") throw subscriptionError
 
-      const plan = userData.subscription_plan
+      const plan = subscriptionData?.plan || "free"
+
+      // Obtener el primer y último día del mes actual
+      const now = new Date()
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
       // Contar los turnos del mes actual
       const { data: monthlyAppointments, error: countError } = await supabase
         .from("appointments")
         .select("id")
         .eq("user_id", userId)
-        .gte("appointment_date", new Date().toISOString().slice(0, 7) + "-01")
-        .lt("appointment_date", new Date().toISOString().slice(0, 7) + "-32")
+        .gte("appointment_date", format(firstDayOfMonth, "yyyy-MM-dd"))
+        .lte("appointment_date", format(lastDayOfMonth, "yyyy-MM-dd"))
 
       if (countError) throw countError
 
@@ -165,6 +177,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       const endTime = new Date(startTime.getTime() + serviceDuration * 60000)
       const endTimeString = format(endTime, "HH:mm")
 
+      // Asegurarse de que la fecha esté en el formato correcto
       const formattedDate = format(date, "yyyy-MM-dd")
 
       // Crear la cita
@@ -182,6 +195,8 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
           end_time: endTimeString,
           status: "pending",
           notes: formData.notes || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single()
