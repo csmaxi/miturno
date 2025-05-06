@@ -81,13 +81,11 @@ export function Navbar({ user }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex items-center space-x-6">
           <Link href="/" className="flex items-center space-x-2">
             <Calendar className="h-6 w-6" />
-            <span className="font-bold text-xl hidden sm:inline-block">MiTurno</span>
+            <span className="font-bold text-xl sm:inline-block">MiTurno</span>
           </Link>
-        </div>
-        <div className="flex items-center space-x-4">
           <nav className="hidden md:flex items-center space-x-6">
             {routes.map((route) => (
               <Link
@@ -102,27 +100,27 @@ export function Navbar({ user }: NavbarProps) {
               </Link>
             ))}
           </nav>
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <ThemeSwitcher />
-            {user ? (
-              <Button variant="ghost" onClick={handleSignOut} className="hidden sm:inline-flex">
-                Cerrar sesión
-              </Button>
-            ) : (
-              <Button variant="ghost" asChild className="hidden sm:inline-flex">
-                <Link href="/auth/login">Iniciar sesión</Link>
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle menu</span>
+        </div>
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <ThemeSwitcher />
+          {user ? (
+            <Button variant="ghost" onClick={handleSignOut} className="hidden sm:inline-flex">
+              Cerrar sesión
             </Button>
-          </div>
+          ) : (
+            <Button variant="ghost" asChild className="hidden sm:inline-flex">
+              <Link href="/auth/login">Iniciar sesión</Link>
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
         </div>
       </div>
       {isMobileMenuOpen && (

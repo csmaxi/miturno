@@ -44,7 +44,7 @@ export default function Home() {
     const initializeAuth = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!mounted) return;
 
         if (user) {
@@ -141,27 +141,34 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
       {user ? (
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        <section className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
-                  ¡Bienvenido,{" "}
-                  <span className="text-primary">
+            <div className="flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="space-y-4 max-w-full overflow-x-auto">
+                <div className="flex flex-nowrap justify-center items-baseline gap-x-2">
+                  <span className="text-4xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+                    ¡Bienvenido,
+                  </span>
+                  <span className="text-4xl font-bold tracking-tight text-primary sm:text-4xl md:text-5xl lg:text-6xl truncate max-w-[60vw]">
                     {userData?.full_name || user.user_metadata?.full_name || user.email || "Usuario"}
                   </span>
-                  !
-                </h1>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+                  <span className="text-4xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+                    !
+                  </span>
+                </div>
+                <p className="text-gray-500 md:text-xl dark:text-gray-400">
                   Gracias por ser parte de MiTurno. Gestiona tus citas y turnos desde tu panel.
                 </p>
               </div>
+
               <div className="flex gap-4">
                 <Button asChild size="lg">
                   <Link href="/dashboard">Ir a mi Dashboard</Link>
                 </Button>
               </div>
             </div>
+
+
           </div>
         </section>
       ) : (
