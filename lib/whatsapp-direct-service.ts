@@ -31,17 +31,13 @@ function formatPhoneNumber(phoneNumber: string): string {
   // Asegurarse de que no esté vacío
   if (formatted.length === 0) return ""
 
-  // Si el número comienza con 54 (Argentina), asegurarse de que tenga el formato correcto
+  // Si el número ya tiene el código de país (comienza con 54), lo dejamos como está
   if (formatted.startsWith("54")) {
     return formatted
   }
 
-  // Si el número no tiene código de país, asumir que es de Argentina
-  if (!formatted.startsWith("54")) {
-    return "54" + formatted
-  }
-
-  return formatted
+  // Si el número no tiene código de país, agregamos el código de Argentina (54)
+  return "54" + formatted
 }
 
 /**
