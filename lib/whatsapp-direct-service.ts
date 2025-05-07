@@ -25,11 +25,16 @@ export function generateWhatsAppLink(phoneNumber: string, message: string): stri
 function formatPhoneNumber(phoneNumber: string): string {
   if (!phoneNumber) return ""
 
-  // Eliminar espacios, guiones, paréntesis y el signo +
-  const formatted = phoneNumber.replace(/[\s\-()+ ]/g, "")
+  // Eliminar espacios, guiones y paréntesis, pero mantener el signo +
+  const formatted = phoneNumber.replace(/[\s\-()]/g, "")
 
   // Asegurarse de que no esté vacío
   if (formatted.length === 0) return ""
+
+  // Asegurarse de que el número comience con el código de país
+  if (!formatted.startsWith("+")) {
+    return "+" + formatted
+  }
 
   return formatted
 }
