@@ -125,11 +125,22 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!date || !formData.time || !formData.serviceId || !formData.phone) {
+    // Validar que el número de teléfono tenga el formato correcto
+    const phoneNumber = formData.displayPhone.trim()
+    if (!phoneNumber || phoneNumber.length < 8) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un número de teléfono válido",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!date || !formData.time || !formData.serviceId) {
       toast({
         title: "Error",
         description:
-          "Por favor completa todos los campos requeridos, incluyendo tu número de WhatsApp para recibir notificaciones.",
+          "Por favor completa todos los campos requeridos.",
         variant: "destructive",
       })
       return
@@ -194,6 +205,9 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       const endTimeString = format(endTime, "HH:mm")
       const formattedDate = format(date, "yyyy-MM-dd")
 
+      // Asegurarse de que el número de teléfono tenga el formato correcto
+      const formattedPhone = `${selectedCountry.prefix}${phoneNumber}`
+
       // Crear la cita
       const { data: appointmentData, error } = await supabase
         .from("appointments")
@@ -203,7 +217,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
           team_member_id: formData.teamMemberId || null,
           client_name: formData.name,
           client_email: formData.email,
-          client_phone: formData.phone,
+          client_phone: formattedPhone,
           appointment_date: formattedDate,
           start_time: formData.time,
           end_time: endTimeString,
@@ -222,7 +236,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
         const message = formatAppointmentNotificationForOwner(appointmentData, selectedService, {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone,
+          phone: formattedPhone,
         })
 
         // Generar enlace de WhatsApp para el propietario
