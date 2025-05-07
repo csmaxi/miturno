@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -47,6 +46,7 @@ export default function TeamPage() {
           .select("*")
           .eq("user_id", userData.user.id)
           .order("created_at", { ascending: false })
+          .limit(1)
 
         if (error) throw error
         setTeamMembers(data || [])
@@ -74,6 +74,15 @@ export default function TeamPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (teamMembers.length >= 1) {
+      toast({
+        title: "Límite alcanzado",
+        description: "Solo puedes agregar un miembro al equipo",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       const { data: userData } = await supabase.auth.getUser()
 
@@ -85,7 +94,7 @@ export default function TeamPage() {
         user_id: userData.user.id,
         name: formData.name,
         position: formData.position || null,
-        bio: formData.instagram || null, // Usamos el campo bio para guardar el Instagram
+        bio: formData.instagram || null,
         image_url: formData.image_url || null,
       })
 
@@ -139,17 +148,26 @@ export default function TeamPage() {
     }
   }
 
+  const hasMember = teamMembers.length >= 1
+
   return (
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Equipo</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
+          {hasMember ? (
+            <Button variant="destructive" disabled>
               <Plus className="mr-2 h-4 w-4" />
-              Agregar miembro
+              Límite alcanzado
             </Button>
-          </DialogTrigger>
+          ) : (
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar miembro
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Agregar miembro del equipo</DialogTitle>

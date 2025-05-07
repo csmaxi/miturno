@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -36,6 +35,7 @@ export default function ServicesPage() {
   })
 
   const supabase = createClientSupabaseClient()
+  const maxServicesReached = services.length >= 3
 
   const fetchServices = async () => {
     setLoading(true)
@@ -78,6 +78,15 @@ export default function ServicesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (services.length >= 3) {
+      toast({
+        title: "Límite alcanzado",
+        description: "Solo puedes crear hasta 3 servicios",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
       const { data: userData } = await supabase.auth.getUser()
@@ -152,9 +161,13 @@ export default function ServicesPage() {
         <h1 className="text-3xl font-bold">Servicios</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button
+              onClick={() => !maxServicesReached && setOpen(true)}
+              disabled={maxServicesReached}
+              variant={maxServicesReached ? "destructive" : "default"}
+            >
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo servicio
+              {maxServicesReached ? "Límite alcanzado" : "Nuevo servicio"}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -238,9 +251,13 @@ export default function ServicesPage() {
             <p className="text-muted-foreground text-center mb-6">
               Aún no has creado ningún servicio. Crea tu primer servicio para que tus clientes puedan reservar turnos.
             </p>
-            <Button onClick={() => setOpen(true)}>
+            <Button
+              onClick={() => setOpen(true)}
+              disabled={maxServicesReached}
+              variant={maxServicesReached ? "destructive" : "default"}
+            >
               <Plus className="mr-2 h-4 w-4" />
-              Crear servicio
+              {maxServicesReached ? "Límite alcanzado" : "Crear servicio"}
             </Button>
           </CardContent>
         </Card>
