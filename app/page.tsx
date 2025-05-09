@@ -10,6 +10,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 import { Calendar, Clock, Share2, Users } from "lucide-react";
 import { Session } from '@supabase/supabase-js';
 import { Navbar } from "@/components/navbar";
+import { useUserContext } from "@/lib/context/UserContext"
 
 // Interfaces para tipado
 interface UserData {
@@ -36,52 +37,7 @@ export default function Home() {
   const [username, setUsername] = useState("");
   const router = useRouter();
   const supabase = useMemo(() => createClientSupabaseClient(), []);
-  const { user, userData, loading, checkUser } = useAuthStore();
-
-  useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!mounted) return;
-
-        if (user) {
-          useAuthStore.setState({ user });
-          checkUser();
-        } else {
-          useAuthStore.setState({ user: null, userData: null });
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (mounted) {
-          useAuthStore.setState({ user: null, userData: null });
-        }
-      }
-    };
-
-    initializeAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string) => {
-      if (!mounted) return;
-
-      if (event === "SIGNED_IN") {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          useAuthStore.setState({ user });
-          await checkUser();
-        }
-      } else if (event === "SIGNED_OUT") {
-        useAuthStore.setState({ user: null, userData: null });
-      }
-    });
-
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, checkUser]);
+  const { user, loading } = useUserContext();
 
   // Validación del nombre de usuario (solo minúsculas, alfanuméricos, 3-20 caracteres)
   const isValidUsername = useCallback((username: string) => {
@@ -139,7 +95,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar user={user} />
+      <Navbar />
       {user ? (
         <section className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
@@ -150,7 +106,7 @@ export default function Home() {
                     ¡Bienvenido,
                   </span>
                   <span className="text-4xl font-bold tracking-tight text-primary sm:text-4xl md:text-5xl lg:text-6xl truncate max-w-[60vw]">
-                    {userData?.full_name || user.user_metadata?.full_name || user.email || "Usuario"}
+                    {user.user_metadata?.full_name || user.email || "Usuario"}
                   </span>
                   <span className="text-4xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
                     !

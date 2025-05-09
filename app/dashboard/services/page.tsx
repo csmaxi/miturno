@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,11 +20,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { useCachedFetch } from "@/lib/hooks/useCachedFetch"
+import { useUserContext } from "@/lib/context/UserContext"
 
 export default function ServicesPage() {
   const { toast } = useToast()
+  const { user, loading: userLoading } = useUserContext()
   const [services, setServices] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -35,37 +37,27 @@ export default function ServicesPage() {
   })
 
   const supabase = createClientSupabaseClient()
-  const maxServicesReached = services.length >= 3
+  const servicesList = useMemo(() => services || [], [services])
+  const maxServicesReached = servicesList.length >= 3
 
-  const fetchServices = async () => {
-    setLoading(true)
-    try {
-      const { data: userData } = await supabase.auth.getUser()
+  const fetchServices = useCallback(async () => {
+    if (!user) return []
+    const { data, error } = await supabase
+      .from("services")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+    if (error) throw error
+    return data || []
+  }, [user, supabase])
 
-      if (userData.user) {
-        const { data, error } = await supabase
-          .from("services")
-          .select("*")
-          .eq("user_id", userData.user.id)
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
-        setServices(data || [])
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudieron cargar los servicios",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: servicesData, loading, error: cachedError, refetch } = useCachedFetch("services-" + (user?.id || ""), fetchServices)
 
   useEffect(() => {
-    fetchServices()
-  }, [])
+    if (servicesData) {
+      setServices(servicesData)
+    }
+  }, [servicesData])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -89,14 +81,8 @@ export default function ServicesPage() {
     }
 
     try {
-      const { data: userData } = await supabase.auth.getUser()
-
-      if (!userData.user) {
-        throw new Error("Usuario no autenticado")
-      }
-
       const { error } = await supabase.from("services").insert({
-        user_id: userData.user.id,
+        user_id: user?.id,
         name: formData.name,
         description: formData.description,
         duration: Number.parseInt(formData.duration.toString()),
@@ -120,7 +106,7 @@ export default function ServicesPage() {
       })
 
       setOpen(false)
-      fetchServices()
+      refetch()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -145,7 +131,7 @@ export default function ServicesPage() {
         description: "El servicio ha sido eliminado exitosamente",
       })
 
-      fetchServices()
+      refetch()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -154,6 +140,14 @@ export default function ServicesPage() {
       })
     }
   }
+
+  const loadingSkeleton = useMemo(() => {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+      </div>
+    )
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -239,11 +233,7 @@ export default function ServicesPage() {
         </Dialog>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
-        </div>
-      ) : services.length === 0 ? (
+      {loading ? loadingSkeleton : servicesList.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Clock className="h-10 w-10 text-muted-foreground mb-4" />
@@ -263,7 +253,7 @@ export default function ServicesPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
+          {servicesList.map((service) => (
             <Card key={service.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">

@@ -25,63 +25,39 @@ import {
   formatAppointmentCancellationForClient,
   generateWhatsAppLink,
 } from "@/lib/whatsapp-direct-service"
+import { useCachedFetch } from "@/lib/hooks/useCachedFetch"
+import { useUserContext } from "@/lib/context/UserContext"
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
-  const [appointments, setAppointments] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, loading: userLoading } = useUserContext()
+  const [openDialog, setOpenDialog] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [notes, setNotes] = useState("")
-  const [openDialog, setOpenDialog] = useState(false)
   const [processingAction, setProcessingAction] = useState(false)
-  const [userData, setUserData] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("pending")
 
-  const supabase = createClientSupabaseClient()
-
   const fetchAppointments = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { data: authData } = await supabase.auth.getUser()
+    if (!user) return []
+    const supabase = createClientSupabaseClient()
+    const { data, error } = await supabase
+      .from("appointments")
+      .select(`*, services:service_id (name), team_members:team_member_id (name)`)
+      .eq("user_id", user.id)
+      .order("appointment_date", { ascending: true })
+    if (error) throw error
+    return data || []
+  }, [user])
 
-      if (authData.user) {
-        const [userProfileResponse, appointmentsResponse] = await Promise.all([
-          supabase.from("users").select("*").eq("id", authData.user.id).single(),
-          supabase.from("appointments")
-            .select(`
-              *,
-              services:service_id (name),
-              team_members:team_member_id (name)
-            `)
-            .eq("user_id", authData.user.id)
-            .order("appointment_date", { ascending: true })
-        ])
-
-        if (userProfileResponse.error) throw userProfileResponse.error
-        setUserData(userProfileResponse.data)
-
-        if (appointmentsResponse.error) throw appointmentsResponse.error
-        setAppointments(appointmentsResponse.data || [])
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudieron cargar los turnos",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase, toast])
-
-  useEffect(() => {
-    fetchAppointments()
-  }, [fetchAppointments])
+  const { data: appointments, loading, error, refetch } = useCachedFetch(
+    "appointments-" + (user?.id || ""),
+    fetchAppointments
+  )
 
   const handleStatusChange = useCallback(async (id: string, status: string) => {
     setProcessingAction(true)
     try {
-      const { data: appointmentData, error: fetchError } = await supabase
+      const { data: appointmentData, error: fetchError } = await createClientSupabaseClient()
         .from("appointments")
         .select(`
           *,
@@ -92,13 +68,13 @@ export default function AppointmentsPage() {
 
       if (fetchError) throw fetchError
 
-      const { error } = await supabase.from("appointments").update({ status }).eq("id", id)
+      const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", id)
       if (error) throw error
 
       if (appointmentData && appointmentData.client_phone && (status === "confirmed" || status === "cancelled")) {
         let message = status === "confirmed"
-          ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, userData)
-          : formatAppointmentCancellationForClient(appointmentData, appointmentData.services, userData)
+          ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, user)
+          : formatAppointmentCancellationForClient(appointmentData, appointmentData.services, user)
 
         if (message) {
           const whatsappLink = generateWhatsAppLink(appointmentData.client_phone, message)
@@ -115,7 +91,7 @@ export default function AppointmentsPage() {
       else if (status === "cancelled") setActiveTab("cancelled")
       else if (status === "completed") setActiveTab("completed")
 
-      fetchAppointments()
+      refetch()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -125,13 +101,13 @@ export default function AppointmentsPage() {
     } finally {
       setProcessingAction(false)
     }
-  }, [supabase, userData, toast, fetchAppointments])
+  }, [toast, user, refetch])
 
   const handleAddNotes = async () => {
     if (!selectedAppointment) return
 
     try {
-      const { error } = await supabase.from("appointments").update({ notes }).eq("id", selectedAppointment.id)
+      const { error } = await createClientSupabaseClient().from("appointments").update({ notes }).eq("id", selectedAppointment.id)
 
       if (error) throw error
 
@@ -141,7 +117,7 @@ export default function AppointmentsPage() {
       })
 
       setOpenDialog(false)
-      fetchAppointments()
+      refetch()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -177,12 +153,12 @@ export default function AppointmentsPage() {
     try {
       const status = type === "confirm" ? "confirmed" : "cancelled"
 
-      const { error } = await supabase.from("appointments").update({ status }).eq("id", appointment.id)
+      const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", appointment.id)
       if (error) throw error
 
       const message = type === "confirm"
-        ? formatAppointmentConfirmationForClient(appointment, appointment.services || {}, userData)
-        : formatAppointmentCancellationForClient(appointment, appointment.services || {}, userData)
+        ? formatAppointmentConfirmationForClient(appointment, appointment.services || {}, user)
+        : formatAppointmentCancellationForClient(appointment, appointment.services || {}, user)
 
       const whatsappLink = generateWhatsAppLink(appointment.client_phone, message)
       window.open(whatsappLink, "_blank")
@@ -194,7 +170,7 @@ export default function AppointmentsPage() {
         description: `El turno ha sido ${type === "confirm" ? "confirmado" : "cancelado"} exitosamente`,
       })
 
-      fetchAppointments()
+      refetch()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -204,31 +180,31 @@ export default function AppointmentsPage() {
     } finally {
       setProcessingAction(false)
     }
-  }, [supabase, userData, toast, fetchAppointments])
+  }, [toast, user, refetch])
 
   // Memoizar los filtros de citas
-  const filteredAppointments = useMemo(() =>
-    appointments.filter(app => app.status === activeTab),
+  const filteredAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === activeTab),
     [appointments, activeTab]
   )
 
-  const pendingAppointments = useMemo(() =>
-    appointments.filter(app => app.status === "pending"),
+  const pendingAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "pending"),
     [appointments]
   )
 
-  const confirmedAppointments = useMemo(() =>
-    appointments.filter(app => app.status === "confirmed"),
+  const confirmedAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "confirmed"),
     [appointments]
   )
 
-  const completedAppointments = useMemo(() =>
-    appointments.filter(app => app.status === "completed"),
+  const completedAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "completed"),
     [appointments]
   )
 
-  const cancelledAppointments = useMemo(() =>
-    appointments.filter(app => app.status === "cancelled"),
+  const cancelledAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "cancelled"),
     [appointments]
   )
 

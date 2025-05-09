@@ -4,50 +4,21 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Calendar, Menu, Settings } from "lucide-react"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useAuthStore } from "@/lib/store/auth-store"
-import { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
+import { useUserContext } from "@/lib/context/UserContext"
 
-interface NavbarProps {
-  user: User | null;
-}
-
-export function Navbar({ user }: NavbarProps) {
+export function Navbar() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const supabase = useMemo(() => createClientSupabaseClient(), [])
-  const { setUser, setUserData, checkUser } = useAuthStore()
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUser(user)
-        await checkUser()
-      }
-    }
-
-    initializeAuth()
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        setUser(session.user)
-        await checkUser()
-      } else if (event === "SIGNED_OUT") {
-        setUser(null)
-        setUserData(null)
-      }
-    })
-
-    return () => {
-      authListener.subscription.unsubscribe()
-    }
-  }, [supabase, setUser, setUserData, checkUser])
+  const { setUser, setUserData } = useAuthStore()
+  const { user, loading } = useUserContext()
 
   const handleSignOut = async () => {
     try {

@@ -13,7 +13,7 @@ export default async function ContactPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar user={user} />
+      <Navbar />
       <main className="flex-1">
         <div className="container px-4 py-12 md:px-6">
           <div className="mx-auto max-w-4xl space-y-6">

@@ -10,6 +10,8 @@ import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/navbar";
+import useSWR from "swr"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
 
 // Definir interfaz para los datos de usuarios
 interface UserData {
@@ -43,60 +45,45 @@ const ProfilesSkeleton = () => (
   </div>
 );
 
-// Componente para la lista de perfiles
-const ProfilesList = ({ page, searchQuery }: { page: number; searchQuery: string }) => {
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+const fetchUsers = async (page: number, searchQuery: string) => {
+  const supabase = createClientSupabaseClient()
+  const pageSize = 12
+  const start = (page - 1) * pageSize
+  const end = start + pageSize - 1
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    const pageSize = 12;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize - 1;
+  let query = supabase
+    .from("users")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
 
-    let query = supabase
-      .from("users")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false });
-
-    if (searchQuery) {
-      query = query.or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,profile_title.ilike.%${searchQuery}%`);
-    }
-
-    const { data, count } = await query.range(start, end);
-
-    if (data) {
-      setUsers(data);
-      setTotalPages(Math.ceil((count || 0) / pageSize));
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [page, searchQuery]);
-
-  if (loading) {
-    return <ProfilesSkeleton />;
+  if (searchQuery) {
+    query = query.or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,profile_title.ilike.%${searchQuery}%`)
   }
 
-  if (!users || users.length === 0) {
+  const { data, count, error } = await query.range(start, end)
+  if (error) throw error
+  return { users: data, totalPages: Math.ceil((count || 0) / pageSize) }
+}
+
+// Componente para la lista de perfiles
+const ProfilesList = ({ page, searchQuery }: { page: number; searchQuery: string }) => {
+  const { data, error, isLoading } = useSWR(["users", page, searchQuery], () => fetchUsers(page, searchQuery))
+
+  if (isLoading) return <ProfilesSkeleton />
+  if (error) return <div className="col-span-full text-center py-12"><p className="text-red-500">Error al cargar perfiles</p></div>
+  if (!data || !data.users || data.users.length === 0) {
     return (
       <div className="col-span-full text-center py-12">
         <p className="text-muted-foreground">No se encontraron perfiles</p>
       </div>
-    );
+    )
   }
+  const { users, totalPages } = data
 
   return (
     <>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {users.map((user) => (
+        {users.map((user: UserData) => (
           <Card key={user.id} className="overflow-hidden">
             <CardHeader className="p-0">
               <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/40">
@@ -184,7 +171,7 @@ export default function ExplorarPage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar user={session?.user ?? null} />
+      <Navbar />
       <div className="container px-4 py-12 md:px-6">
         <div className="space-y-8">
           <div className="text-center space-y-4">

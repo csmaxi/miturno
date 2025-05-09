@@ -101,7 +101,7 @@ export default async function UserProfilePage({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar user={currentUser} />
+      <Navbar />
       <main className="flex-1">
         <div className="relative">
           <div className="h-40 bg-gradient-to-r from-primary/20 to-primary/40 w-full">

@@ -39,7 +39,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar user={null} />
+      <Navbar />
       <main className="flex-1">
         <div className="container px-4 py-12 md:px-6">
           <div className="mx-auto max-w-md space-y-8">
