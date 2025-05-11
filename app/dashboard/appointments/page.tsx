@@ -5,7 +5,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Calendar, Check, X, MessageSquare } from "lucide-react"
+import { Calendar, Check, X, MessageSquare, Info } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -27,6 +27,7 @@ import {
 } from "@/lib/whatsapp-direct-service"
 import { useCachedFetch } from "@/lib/hooks/useCachedFetch"
 import { useUserContext } from "@/lib/context/UserContext"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
@@ -45,6 +46,7 @@ export default function AppointmentsPage() {
       .select(`*, services:service_id (name), team_members:team_member_id (name)`)
       .eq("user_id", user.id)
       .order("appointment_date", { ascending: true })
+      .order("created_at", { ascending: false })
     if (error) throw error
     return data || []
   }, [user])
@@ -208,6 +210,11 @@ export default function AppointmentsPage() {
     [appointments]
   )
 
+  // Check if we've reached the appointment limit
+  const hasReachedAppointmentLimit = useMemo(() => {
+    return (pendingAppointments.length + confirmedAppointments.length) >= 10
+  }, [pendingAppointments, confirmedAppointments])
+
   const renderAppointmentList = (appointmentList: any[]) => {
     if (appointmentList.length === 0) {
       return (
@@ -219,100 +226,106 @@ export default function AppointmentsPage() {
 
     return (
       <div className="space-y-4">
-        {appointmentList.map((appointment) => (
-          <Card key={appointment.id}>
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <p className="font-medium">{appointment.client_name}</p>
-                  <p className="text-sm text-muted-foreground">{appointment.client_email}</p>
-                  {appointment.client_phone && (
-                    <p className="text-sm text-muted-foreground">{appointment.client_phone}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">{format(new Date(appointment.appointment_date), "PPP", { locale: es })}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {appointment.start_time.substring(0, 5)} - {appointment.end_time.substring(0, 5)}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {appointment.services && <Badge variant="secondary">{appointment.services.name}</Badge>}
-                {appointment.team_members && <Badge variant="secondary">{appointment.team_members.name}</Badge>}
-                {getStatusBadge(appointment.status)}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {/* Botones de acción y notas */}
-                <div className="flex flex-col sm:flex-row gap-2 w-full">
-                  {appointment.status === "pending" && (
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-green-600 flex-1"
-                        onClick={() => handleStatusChange(appointment.id, "confirmed")}
-                        disabled={processingAction}
-                      >
-                        <Check className="mr-2 h-4 w-4" />
-                        Confirmar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 flex-1"
-                        onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                        disabled={processingAction}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Cancelar
-                      </Button>
-                    </div>
-                  )}
-                  {appointment.status === "confirmed" && (
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-blue-600 flex-1"
-                        onClick={() => handleStatusChange(appointment.id, "completed")}
-                        disabled={processingAction}
-                      >
-                        <Check className="mr-2 h-4 w-4" />
-                        Completar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 flex-1"
-                        onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                        disabled={processingAction}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Cancelar
-                      </Button>
-                    </div>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => openNotesDialog(appointment)}
-                    className="w-full sm:w-auto"
-                  >
-                    {appointment.notes ? "Editar notas" : "Agregar notas"}
-                  </Button>
-                </div>
-              </div>
+        {appointmentList.map((appointment, index) => {
+          // Check if this is the 11th appointment and it's pending
+          const isEleventhAppointment = index === 10 && appointment.status === "pending"
+          const shouldDisableButtons = isEleventhAppointment && hasReachedAppointmentLimit
 
-              {appointment.notes && (
-                <div className="mt-4 text-sm border-t pt-4">
-                  <p className="font-medium">Notas:</p>
-                  <p className="text-muted-foreground">{appointment.notes}</p>
+          return (
+            <Card key={appointment.id}>
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="font-medium">{appointment.client_name}</p>
+                    <p className="text-sm text-muted-foreground">{appointment.client_email}</p>
+                    {appointment.client_phone && (
+                      <p className="text-sm text-muted-foreground">{appointment.client_phone}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">{format(new Date(appointment.appointment_date), "PPP", { locale: es })}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {appointment.start_time.substring(0, 5)} - {appointment.end_time.substring(0, 5)}
+                    </p>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {appointment.services && <Badge variant="secondary">{appointment.services.name}</Badge>}
+                  {appointment.team_members && <Badge variant="secondary">{appointment.team_members.name}</Badge>}
+                  {getStatusBadge(appointment.status)}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {/* Botones de acción y notas */}
+                  <div className="flex flex-col sm:flex-row gap-2 w-full">
+                    {appointment.status === "pending" && (
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 flex-1"
+                          onClick={() => handleStatusChange(appointment.id, "confirmed")}
+                          disabled={processingAction || shouldDisableButtons}
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          Confirmar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 flex-1"
+                          onClick={() => handleStatusChange(appointment.id, "cancelled")}
+                          disabled={processingAction || shouldDisableButtons}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                    {appointment.status === "confirmed" && (
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-600 flex-1"
+                          onClick={() => handleStatusChange(appointment.id, "completed")}
+                          disabled={processingAction}
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          Completar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 flex-1"
+                          onClick={() => handleStatusChange(appointment.id, "cancelled")}
+                          disabled={processingAction}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => openNotesDialog(appointment)}
+                      className="w-full sm:w-auto"
+                    >
+                      {appointment.notes ? "Editar notas" : "Agregar notas"}
+                    </Button>
+                  </div>
+                </div>
+
+                {appointment.notes && (
+                  <div className="mt-4 text-sm border-t pt-4">
+                    <p className="font-medium">Notas:</p>
+                    <p className="text-muted-foreground">{appointment.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     )
   }
@@ -322,6 +335,15 @@ export default function AppointmentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Turnos</h1>
       </div>
+
+      {hasReachedAppointmentLimit && (
+        <Alert variant="default" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-900 dark:text-yellow-200">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Has alcanzado el límite de 10 turnos (pendientes + confirmados). Los turnos adicionales no podrán ser confirmados hasta que se libere espacio.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
