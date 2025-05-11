@@ -101,7 +101,7 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-6 text-center">
               <div className="space-y-4 max-w-full overflow-x-auto">
-                <div className="flex flex-nowrap justify-center items-baseline gap-x-2">
+                <div className="flex flex-wrap justify-center items-baseline gap-x-2">
                   <span className="text-4xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
                     ¡Bienvenido,
                   </span>

@@ -36,6 +36,7 @@ export default function AppointmentsPage() {
   const [notes, setNotes] = useState("")
   const [processingAction, setProcessingAction] = useState(false)
   const [activeTab, setActiveTab] = useState("pending")
+  const [localAppointments, setLocalAppointments] = useState<any[]>([])
 
   const fetchAppointments = useCallback(async () => {
     if (!user) return []
@@ -51,28 +52,42 @@ export default function AppointmentsPage() {
 
   const { data: appointments, loading, error, refetch } = useCachedFetch(
     "appointments-" + (user?.id || ""),
-    fetchAppointments
+    fetchAppointments,
+ 
   )
+
+  useEffect(() => {
+    if (appointments) {
+      setLocalAppointments(appointments)
+    }
+  }, [appointments])
 
   const handleStatusChange = useCallback(async (id: string, status: string) => {
     setProcessingAction(true)
     try {
+      setLocalAppointments(prev => 
+        prev.map(app => 
+          app.id === id ? { ...app, status } : app
+        )
+      )
+
       const { data: appointmentData, error: fetchError } = await createClientSupabaseClient()
         .from("appointments")
-        .select(`
-          *,
-          services:service_id (name)
-        `)
+        .select(`*, services:service_id (name)`)
         .eq("id", id)
         .single()
 
       if (fetchError) throw fetchError
 
-      const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", id)
+      const { error } = await createClientSupabaseClient()
+        .from("appointments")
+        .update({ status })
+        .eq("id", id)
+
       if (error) throw error
 
-      if (appointmentData && appointmentData.client_phone && (status === "confirmed" || status === "cancelled")) {
-        let message = status === "confirmed"
+      if (appointmentData?.client_phone && (status === "confirmed" || status === "cancelled")) {
+        const message = status === "confirmed"
           ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, user)
           : formatAppointmentCancellationForClient(appointmentData, appointmentData.services, user)
 
@@ -84,44 +99,52 @@ export default function AppointmentsPage() {
 
       toast({
         title: "Estado actualizado",
-        description: `El turno ha sido ${status === "confirmed" ? "confirmado" : status === "completed" ? "completado" : "cancelado"} exitosamente`,
+        description: `Turno ${status === "confirmed" ? "confirmado" : status === "completed" ? "completado" : "cancelado"}`,
       })
 
-      if (status === "confirmed") setActiveTab("confirmed")
-      else if (status === "cancelled") setActiveTab("cancelled")
-      else if (status === "completed") setActiveTab("completed")
-
-      refetch()
+      setActiveTab(status === "confirmed" ? "confirmed" : status === "cancelled" ? "cancelled" : "completed")
+      await refetch()
     } catch (error: any) {
+      setLocalAppointments(appointments || [])
       toast({
         title: "Error",
-        description: error.message || "No se pudo actualizar el estado del turno",
+        description: error.message || "Error actualizando estado",
         variant: "destructive",
       })
     } finally {
       setProcessingAction(false)
     }
-  }, [toast, user, refetch])
+  }, [toast, user, refetch, appointments])
 
   const handleAddNotes = async () => {
     if (!selectedAppointment) return
 
     try {
-      const { error } = await createClientSupabaseClient().from("appointments").update({ notes }).eq("id", selectedAppointment.id)
+      setLocalAppointments(prev =>
+        prev.map(app =>
+          app.id === selectedAppointment.id ? { ...app, notes } : app
+        )
+      )
+
+      const { error } = await createClientSupabaseClient()
+        .from("appointments")
+        .update({ notes })
+        .eq("id", selectedAppointment.id)
 
       if (error) throw error
 
       toast({
         title: "Notas actualizadas",
-        description: "Las notas han sido actualizadas exitosamente",
+        description: "Cambios guardados exitosamente",
       })
 
       setOpenDialog(false)
-      refetch()
+      await refetch()
     } catch (error: any) {
+      setLocalAppointments(appointments || [])
       toast({
         title: "Error",
-        description: error.message || "No se pudieron actualizar las notas",
+        description: error.message || "Error guardando notas",
         variant: "destructive",
       })
     }
@@ -148,64 +171,24 @@ export default function AppointmentsPage() {
     }
   }
 
-  const handleWhatsAppAction = useCallback(async (appointment: any, type: "confirm" | "cancel") => {
-    setProcessingAction(true)
-    try {
-      const status = type === "confirm" ? "confirmed" : "cancelled"
-
-      const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", appointment.id)
-      if (error) throw error
-
-      const message = type === "confirm"
-        ? formatAppointmentConfirmationForClient(appointment, appointment.services || {}, user)
-        : formatAppointmentCancellationForClient(appointment, appointment.services || {}, user)
-
-      const whatsappLink = generateWhatsAppLink(appointment.client_phone, message)
-      window.open(whatsappLink, "_blank")
-
-      setActiveTab(status)
-
-      toast({
-        title: "Estado actualizado",
-        description: `El turno ha sido ${type === "confirm" ? "confirmado" : "cancelado"} exitosamente`,
-      })
-
-      refetch()
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo completar la acción",
-        variant: "destructive",
-      })
-    } finally {
-      setProcessingAction(false)
-    }
-  }, [toast, user, refetch])
-
-  // Memoizar los filtros de citas
-  const filteredAppointments = useMemo(
-    () => (appointments ?? []).filter((app: { status: string }) => app.status === activeTab),
-    [appointments, activeTab]
-  )
-
   const pendingAppointments = useMemo(
-    () => (appointments ?? []).filter((app: { status: string }) => app.status === "pending"),
-    [appointments]
+    () => localAppointments.filter((app: { status: string }) => app.status === "pending"),
+    [localAppointments]
   )
 
   const confirmedAppointments = useMemo(
-    () => (appointments ?? []).filter((app: { status: string }) => app.status === "confirmed"),
-    [appointments]
+    () => localAppointments.filter((app: { status: string }) => app.status === "confirmed"),
+    [localAppointments]
   )
 
   const completedAppointments = useMemo(
-    () => (appointments ?? []).filter((app: { status: string }) => app.status === "completed"),
-    [appointments]
+    () => localAppointments.filter((app: { status: string }) => app.status === "completed"),
+    [localAppointments]
   )
 
   const cancelledAppointments = useMemo(
-    () => (appointments ?? []).filter((app: { status: string }) => app.status === "cancelled"),
-    [appointments]
+    () => localAppointments.filter((app: { status: string }) => app.status === "cancelled"),
+    [localAppointments]
   )
 
   const renderAppointmentList = (appointmentList: any[]) => {
@@ -243,7 +226,6 @@ export default function AppointmentsPage() {
                 {getStatusBadge(appointment.status)}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {/* Botones de acción y notas */}
                 <div className="flex flex-col sm:flex-row gap-2 w-full">
                   {appointment.status === "pending" && (
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -327,7 +309,7 @@ export default function AppointmentsPage() {
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
         </div>
-      ) : appointments.length === 0 ? (
+      ) : localAppointments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Calendar className="h-10 w-10 text-muted-foreground mb-4" />
