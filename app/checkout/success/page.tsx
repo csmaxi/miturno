@@ -75,10 +75,10 @@ const SuccessCard = ({ userData }: { userData: UserData | null }) => (
         </p>
         <div className="flex flex-col space-y-2">
           <Button asChild>
-            <Link href="/dashboard">Ir a mi Dashboard</Link>
+            <Link href="/dashboard" prefetch={false}>Ir a mi Dashboard</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/${userData?.username}`} target="_blank">
+            <Link href={`/${userData?.username}`} target="_blank" prefetch={false}>
               Ver mi página pública
             </Link>
           </Button>
@@ -107,7 +107,7 @@ export default function CheckoutSuccessPage() {
   const { data: userData, isLoading } = useSupabaseQuery<UserData>({
     queryKey: 'user-data',
     queryFn,
-    staleTime: 1000 * 60 * 30 // 30 minutos
+    staleTime: 1000 * 60 * 30, // 30 minutos
   })
 
   return (
@@ -119,7 +119,7 @@ export default function CheckoutSuccessPage() {
             {isLoading ? (
               <div className="h-64 bg-muted animate-pulse rounded-lg" />
             ) : (
-              <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-lg" />}>
+              <Suspense fallback={<LoadingSpinner />}>
                 <SuccessCard userData={userData} />
               </Suspense>
             )}

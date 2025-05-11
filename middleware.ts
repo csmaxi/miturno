@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export const runtime = 'edge'
-
-export async function GET() {
+export function middleware(request: NextRequest) {
   const response = NextResponse.next()
-  
+
   // Configurar headers para el back/forward cache
   response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
   response.headers.set('Vary', 'Accept-Encoding')
@@ -17,7 +16,24 @@ export async function GET() {
   
   // Optimizar para el back/forward cache
   response.headers.set('Surrogate-Control', 'max-age=31536000, immutable')
-  response.headers.set('Surrogate-Key', 'checkout-success')
   
+  // Add specific cache headers for checkout success page
+  if (request.nextUrl.pathname === '/checkout/success') {
+    response.headers.set('Surrogate-Key', 'checkout-success')
+  }
+
   return response
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 } 
