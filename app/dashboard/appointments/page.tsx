@@ -25,7 +25,6 @@ import {
   formatAppointmentCancellationForClient,
   generateWhatsAppLink,
 } from "@/lib/whatsapp-direct-service"
-import { useCachedFetch } from "@/lib/hooks/useCachedFetch"
 import { useUserContext } from "@/lib/context/UserContext"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -37,6 +36,9 @@ export default function AppointmentsPage() {
   const [notes, setNotes] = useState("")
   const [processingAction, setProcessingAction] = useState(false)
   const [activeTab, setActiveTab] = useState("pending")
+  const [appointments, setAppointments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<any>(null)
 
   const fetchAppointments = useCallback(async () => {
     if (!user) return []
@@ -51,10 +53,58 @@ export default function AppointmentsPage() {
     return data || []
   }, [user])
 
-  const { data: appointments, loading, error, refetch } = useCachedFetch(
-    "appointments-" + (user?.id || ""),
-    fetchAppointments
-  )
+  useEffect(() => {
+    if (!user) return
+
+    const supabase = createClientSupabaseClient()
+    
+    // Cargar datos iniciales
+    fetchAppointments()
+      .then(data => {
+        setAppointments(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        setError(err)
+        setLoading(false)
+      })
+
+    // Configurar suscripción en tiempo real
+    const subscription = supabase
+      .channel('appointments_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `user_id=eq.${user.id}`
+        },
+        async () => {
+          // Cuando hay cambios, actualizar los datos
+          const newData = await fetchAppointments()
+          setAppointments(newData)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user, fetchAppointments])
+
+  const refetch = useCallback(() => {
+    setLoading(true)
+    fetchAppointments()
+      .then(data => {
+        setAppointments(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        setError(err)
+        setLoading(false)
+      })
+  }, [fetchAppointments])
 
   const handleStatusChange = useCallback(async (id: string, status: string) => {
     setProcessingAction(true)

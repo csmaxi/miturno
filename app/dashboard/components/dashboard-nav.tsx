@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { useAuthStore } from "@/lib/store/auth-store"
 
 
 interface DashboardNavProps {
@@ -21,11 +22,23 @@ export function DashboardNav({ user }: DashboardNavProps) {
   const router = useRouter()
   const supabase = createClientSupabaseClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { setUser, setUserData } = useAuthStore()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Esperar un momento para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      setUser(null)
+      setUserData(null)
+      router.push("/")
+      router.refresh()
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   const routes = [

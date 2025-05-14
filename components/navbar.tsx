@@ -22,10 +22,16 @@ export function Navbar() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Esperar un momento para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       setUser(null)
       setUserData(null)
       router.push("/")
+      router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
     }
