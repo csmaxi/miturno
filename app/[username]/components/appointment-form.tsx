@@ -183,16 +183,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
           .single()
       ])
 
-      const plan = subscriptionData?.plan || "free"
-      const monthlyAppointmentsCount = monthlyAppointments?.length || 0
-
-      // Verificar límites según el plan
-      if (plan === "free" && monthlyAppointmentsCount >= 15) {
-        throw new Error("Límite de turnos alcanzado. Actualiza tu plan.")
-      } else if (plan === "basic" && monthlyAppointmentsCount >= 30) {
-        throw new Error("Límite de turnos alcanzado. Actualiza tu plan.")
-      }
-
       const selectedService = services.find((s) => s.id === formData.serviceId)
       const serviceDuration = selectedService ? selectedService.duration : 30
 
@@ -230,21 +220,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
         .single()
 
       if (error) throw error
-
-      // Enviar notificación al propietario por WhatsApp
-      if (ownerData && ownerData.phone && appointmentData) {
-        const message = formatAppointmentNotificationForOwner(appointmentData, selectedService, {
-          name: formData.name,
-          email: formData.email,
-          phone: formattedPhone,
-        })
-
-        // Generar enlace de WhatsApp para el propietario
-        const whatsappLink = generateWhatsAppLink(ownerData.phone, message)
-
-        // Abrir el enlace en una nueva pestaña
-        window.open(whatsappLink, "_blank")
-      }
 
       setSuccess(true)
       toast({

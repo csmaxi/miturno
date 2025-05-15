@@ -149,7 +149,7 @@ export default function Home() {
                       </div>
                       <Input
                         className="pl-[105px]"
-                        placeholder="usuario"
+                        placeholder=" usuario"
                         value={username}
                         onChange={handleUsernameChange}
                         onKeyDown={handleKeyDown}
