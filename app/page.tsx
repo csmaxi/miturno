@@ -97,7 +97,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       {user ? (
-        <section className="w-full min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 md:py-24 lg:py-32">
+        <section className="h-[calc(100vh-4rem)] flex items-center justify-center">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-6 text-center">
               <div className="space-y-4 max-w-full overflow-x-auto">
@@ -123,17 +123,15 @@ export default function Home() {
                 </Button>
               </div>
             </div>
-
-
           </div>
         </section>
       ) : (
         <>
-          <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-muted">
+          <section className="h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-b from-background to-muted">
             <div className="container px-4 md:px-6">
               <div className="flex flex-col items-center justify-center space-y-4 text-center">
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
+                  <h1 className="text-5xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl mb-4">
                     Potenciá tu agenda
                   </h1>
                   <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
