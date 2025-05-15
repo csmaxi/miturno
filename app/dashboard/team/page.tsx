@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Trash, Users, Instagram } from "lucide-react"
+import { Plus, Trash, Users, Instagram, Upload } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ export default function TeamPage() {
     instagram: "",
     image_url: "",
   })
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const supabase = createClientSupabaseClient()
 
@@ -148,6 +149,46 @@ export default function TeamPage() {
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      setUploadingImage(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Usuario no autenticado")
+
+      const fileExt = file.name.split(".").pop()
+      const filePath = `${user.id}/team_${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("profiles")
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("profiles")
+        .getPublicUrl(filePath)
+
+      setFormData(prev => ({ ...prev, image_url: publicUrl }))
+
+      toast({
+        title: "Imagen subida",
+        description: "La imagen se subió correctamente",
+      })
+
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al subir la imagen",
+        variant: "destructive",
+      })
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const hasMember = teamMembers.length >= 1
 
   return (
@@ -207,18 +248,44 @@ export default function TeamPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="image_url">URL de imagen</Label>
-                <Input
-                  id="image_url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
+                <Label>Imagen de perfil</Label>
+                <div className="flex flex-col items-center gap-4">
+                  <Avatar className="h-24 w-24">
+                    {formData.image_url ? (
+                      <AvatarImage src={formData.image_url} alt={formData.name} />
+                    ) : (
+                      <AvatarFallback className="text-2xl">
+                        {formData.name ? formData.name.substring(0, 2).toUpperCase() : "??"}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="space-y-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="team_image"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        disabled={uploadingImage}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById("team_image")?.click()}
+                        className="w-full"
+                        disabled={uploadingImage}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {uploadingImage ? "Subiendo..." : "Seleccionar imagen"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleSubmit}>Agregar miembro</Button>
+              <Button onClick={handleSubmit} disabled={uploadingImage}>Agregar miembro</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
