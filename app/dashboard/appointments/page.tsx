@@ -194,7 +194,11 @@ export default function AppointmentsPage() {
 
   const visiblePendingAppointments = useMemo(() => {
     const allowed = Math.max(0, 10 - confirmedAppointments.length)
-    return pendingAppointments.slice(0, allowed)
+    // Sort appointments by created_at in ascending order (oldest first)
+    const sortedPending = [...pendingAppointments].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+    return sortedPending.slice(0, allowed)
   }, [pendingAppointments, confirmedAppointments])
 
   const hiddenPendingCount = pendingAppointments.length - visiblePendingAppointments.length
@@ -369,7 +373,7 @@ export default function AppointmentsPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending">{renderAppointmentList(pendingAppointments)}</TabsContent>
+          <TabsContent value="pending">{renderAppointmentList(visiblePendingAppointments)}</TabsContent>
           <TabsContent value="confirmed">{renderAppointmentList(confirmedAppointments)}</TabsContent>
           <TabsContent value="completed">{renderAppointmentList(completedAppointments)}</TabsContent>
           <TabsContent value="cancelled">{renderAppointmentList(cancelledAppointments)}</TabsContent>
