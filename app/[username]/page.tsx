@@ -131,7 +131,7 @@ export default async function UserProfilePage({
               <h1 className="mt-4 text-2xl font-bold">{userData.full_name}</h1>
               <p className="text-muted-foreground">@{userData.username}</p>
               {userData.profile_description && (
-                <p className="mt-4 max-w-2xl text-center text-muted-foreground">
+                <p className="mt-4 border w-full max-w-2xl text-center text-muted-foreground p-4 rounded-lg">
                   {userData.profile_description}
                 </p>
               )}
@@ -145,115 +145,100 @@ export default async function UserProfilePage({
         </div>
 
         <div className="container px-4 py-12 md:px-6">
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-8">
-              {safeServices.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-center gap-2">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <CardTitle>Servicios</CardTitle>
-                    </div>
-                    <div className="flex justify-center">
-                      <CardDescription>Servicios disponibles para reservar</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="grid gap-4">
-                    {safeServices.map((service) => (
-                      <div
-                        key={service.id}
-                        className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0"
-                      >
-                        <div>
-                          <h3 className="font-medium">{service.name}</h3>
-                          {service.description && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {service.description}
-                            </p>
-                          )}
-                          <p className="text-sm mt-1">Duración: {service.duration} minutos</p>
-                        </div>
-                        {service.price && (
-                          <div className="font-medium">${service.price.toFixed(2)}</div>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
+          <div className="space-y-8">
+            <Suspense fallback={<AppointmentFormLoader />}>
+              <AppointmentForm
+                userId={userData.id}
+                services={safeServices}
+                teamMembers={safeTeamMembers}
+                availability={safeAvailability}
+              />
+            </Suspense>
 
-              {safeTeamMembers.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      <CardTitle>Equipo</CardTitle>
-                    </div>
-                    <div className="flex justify-center">
-                      <CardDescription>Conoce a nuestro equipo</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="grid gap-6 md:grid-cols-3">
-                    {safeTeamMembers.map((member) => (
-                      <div key={member.id} className="flex flex-col items-center text-center">
-                        <Avatar className="h-32 w-32 mb-2">
-                          {member.image_url ? (
-                            <OptimizedImage
-                              src={member.image_url}
-                              alt={member.name}
-                              className="object-cover"
-                            />
-                          ) : (
-                            <AvatarFallback>
-                              {member.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <h3 className="font-medium">{member.name}</h3>
-                        {member.position && (
-                          <p className="text-sm text-muted-foreground">{member.position}</p>
-                        )}
-                        {member.bio && (
-                          <div className="flex items-center mt-1">
-                            <Instagram className="h-3 w-3 mr-1 text-pink-500" />
-                            <a
-                              href={`https://instagram.com/${member.bio.replace("@", "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-pink-500 hover:underline"
-                            >
-                              {member.bio}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            <div>
+            {safeServices.length > 0 && (
               <Card>
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    <CardTitle>Reservar turno</CardTitle>
+                  <div className="flex justify-center gap-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <CardTitle>Servicios</CardTitle>
                   </div>
-                  <CardDescription>Completa el formulario para reservar un turno</CardDescription>
+                  <div className="flex justify-center">
+                    <CardDescription>Servicios disponibles para reservar</CardDescription>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <Suspense fallback={<AppointmentFormLoader />}>
-                    <AppointmentForm
-                      userId={userData.id}
-                      services={safeServices}
-                      teamMembers={safeTeamMembers}
-                      availability={safeAvailability}
-                    />
-                  </Suspense>
+                <CardContent className="grid gap-4">
+                  {safeServices.map((service) => (
+                    <div
+                      key={service.id}
+                      className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0"
+                    >
+                      <div>
+                        <h3 className="font-medium">{service.name}</h3>
+                        {service.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {service.description}
+                          </p>
+                        )}
+                        <p className="text-sm mt-1">Duración: {service.duration} minutos</p>
+                      </div>
+                      {service.price && (
+                        <div className="font-medium">${service.price.toFixed(2)}</div>
+                      )}
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
-            </div>
+            )}
+
+            {safeTeamMembers.length > 0 && (
+              <Card className="w-1/2 mx-auto">
+                <CardHeader>
+                  <div className="flex justify-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <CardTitle>Equipo</CardTitle>
+                  </div>
+                  <div className="flex justify-center">
+                    <CardDescription>Conoce a nuestro equipo</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {safeTeamMembers.map((member) => (
+                    <div key={member.id} className="flex flex-col items-center text-center">
+                      <Avatar className="h-32 w-32 mb-2 border-2 border-black">
+                        {member.image_url ? (
+                          <OptimizedImage
+                            src={member.image_url}
+                            alt={member.name}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <AvatarFallback className="text-4xl">
+                            {member.name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <h3 className="font-medium">{member.name}</h3>
+                      {member.role && (
+                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                      )}
+                      {member.bio && (
+                        <div className="flex items-center mt-1">
+                          <Instagram className="h-3 w-3 mr-1 text-pink-500" />
+                          <a
+                            href={`https://instagram.com/${member.bio.replace("@", "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-pink-500 hover:underline"
+                          >
+                            {member.bio}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>

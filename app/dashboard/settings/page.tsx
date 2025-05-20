@@ -231,9 +231,9 @@ export default function SettingsPage() {
   return (
     <div className="container py-4 md:py-6">
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="w-full md:w-auto">
+        {/* <TabsList className="w-full md:w-auto">
           <TabsTrigger value="profile" className="flex-1 md:flex-none">Perfil</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
         <TabsContent value="profile">
           <Card>
             <CardHeader>
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="username">Nombre de usuario</Label>
                     <div className="flex">
                       <span className="flex items-center bg-muted px-3 rounded-l-md border border-r-0 border-input text-sm">
@@ -272,8 +272,28 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground">
                       El nombre de usuario no puede ser modificado
                     </p>
+                  </div> */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile_description">Descripción</Label>
+                    <Textarea
+                      id="profile_description"
+                      name="profile_description"
+                      placeholder="Describe tu negocio o servicios"
+                      value={profileData.profile_description}
+                      onChange={handleProfileChange}
+                      rows={4}
+                    />
                   </div>
-
+                  <div className="space-y-2">
+                    <Label htmlFor="profile_title">Rubro</Label>
+                    <Input
+                      id="profile_title"
+                      name="profile_title"
+                      placeholder="Ej: Peluquería, Consultorio Médico"
+                      value={profileData.profile_title}
+                      onChange={handleProfileChange}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -305,28 +325,9 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="profile_title">Rubro</Label>
-                    <Input
-                      id="profile_title"
-                      name="profile_title"
-                      placeholder="Ej: Peluquería, Consultorio Médico"
-                      value={profileData.profile_title}
-                      onChange={handleProfileChange}
-                    />
-                  </div>
+              
 
-                  <div className="space-y-2">
-                    <Label htmlFor="profile_description">Descripción</Label>
-                    <Textarea
-                      id="profile_description"
-                      name="profile_description"
-                      placeholder="Describe tu negocio o servicios"
-                      value={profileData.profile_description}
-                      onChange={handleProfileChange}
-                      rows={4}
-                    />
-                  </div>
+              
                 </div>
 
                 <div className="lg:w-1/3 space-y-6">

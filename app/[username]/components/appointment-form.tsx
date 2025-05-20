@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,13 +11,30 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, ChevronDown, ChevronUp, Calendar as CalendarIcon2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { generateWhatsAppLink, formatAppointmentNotificationForOwner } from "@/lib/whatsapp-direct-service"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info } from "lucide-react"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const SOUTH_AMERICAN_COUNTRIES = [
   { code: "AR", name: "Argentina", prefix: "+54" },
@@ -44,6 +60,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const { toast } = useToast()
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
+  const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -57,6 +74,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [ownerData, setOwnerData] = useState<any>(null)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -222,11 +240,8 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       if (error) throw error
 
       setSuccess(true)
-      toast({
-        title: "Turno reservado",
-        description:
-          "Tu turno ha sido reservado exitosamente. El profesional se pondrá en contacto contigo para confirmar.",
-      })
+      setShowSuccessDialog(true)
+      setIsOpen(false) // Cerrar el formulario
 
       // Resetear formulario
       setFormData({
@@ -253,167 +268,353 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
   if (success) {
     return (
-      <div className="text-center py-6 space-y-4">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="h-8 w-8"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-        </div>
-        <h3 className="text-xl font-medium">¡Turno reservado!</h3>
-        <p className="text-muted-foreground">
-          Hemos recibido tu solicitud de turno. El profesional se pondrá en contacto contigo para confirmar.
-        </p>
-        <div className="flex flex-col gap-2">
-          <Button onClick={() => setSuccess(false)}>Reservar otro turno</Button>
-        </div>
-      </div>
+      <>
+        <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <AlertDialogContent className="sm:max-w-md">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="h-10 w-10"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <AlertDialogHeader className="space-y-2 text-center">
+                <AlertDialogTitle className="text-2xl text-center font-bold">¡Turno reservado!</AlertDialogTitle>
+                <AlertDialogDescription className="text-base">
+                  Hemos recibido tu solicitud de turno. El profesional se pondrá en contacto contigo para confirmar.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center w-full">
+                <AlertDialogAction 
+                  onClick={() => {
+                    setShowSuccessDialog(false)
+                    setSuccess(false)
+                  }}
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+                >
+                  Aceptar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button 
+              className="fixed right-4 bottom-4 shadow-lg bg-primary hover:bg-primary/90 text-white gap-2 z-50"
+              size="lg"
+            >
+              <CalendarIcon2 className="h-5 w-5" />
+              Reservar turno
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Reservar turno</SheetTitle>
+            </SheetHeader>
+            <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre completo</Label>
+                <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Seleccionar país" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOUTH_AMERICAN_COUNTRIES.map((country) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          {country.name} ({country.prefix})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.displayPhone}
+                    onChange={handleChange}
+                    placeholder="Ej: 9112345678"
+                    required
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ingresa tu número sin espacios ni guiones. Ejemplo: 9112345678
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service">Servicio</Label>
+                <Select value={formData.serviceId} onValueChange={(value) => handleSelectChange("serviceId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un servicio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.name} ({service.duration} min)
+                        {service.price ? ` - ${service.price.toFixed(2)}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {teamMembers.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="teamMember">Profesional (opcional)</Label>
+                  <Select value={formData.teamMemberId} onValueChange={(value) => handleSelectChange("teamMemberId", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un profesional" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP", { locale: es }) : "Selecciona una fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      initialFocus
+                      disabled={(date) => {
+                        const dayOfWeek = date.getDay()
+                        return date < new Date() || !availability.some((a) => a.day_of_week === dayOfWeek)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {date && availableTimes.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="time">Horario</Label>
+                  <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un horario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTimes.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  placeholder="Información adicional que quieras compartir"
+                  value={formData.notes}
+                  onChange={handleChange}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Reservando..." : "Reservar turno"}
+              </Button>
+            </form>
+          </SheetContent>
+        </Sheet>
+      </>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Nombre completo</Label>
-        <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="tu@email.com"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Seleccionar país" />
-            </SelectTrigger>
-            <SelectContent>
-              {SOUTH_AMERICAN_COUNTRIES.map((country) => (
-                <SelectItem key={country.code} value={country.code}>
-                  {country.name} ({country.prefix})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            id="phone"
-            name="phone"
-            type="tel"
-            value={formData.displayPhone}
-            onChange={handleChange}
-            placeholder="Ej: 9112345678"
-            required
-            className="flex-1"
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Ingresa tu número sin espacios ni guiones. Ejemplo: 9112345678
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="service">Servicio</Label>
-        <Select value={formData.serviceId} onValueChange={(value) => handleSelectChange("serviceId", value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona un servicio" />
-          </SelectTrigger>
-          <SelectContent>
-            {services.map((service) => (
-              <SelectItem key={service.id} value={service.id}>
-                {service.name} ({service.duration} min)
-                {service.price ? ` - ${service.price.toFixed(2)}` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {teamMembers.length > 0 && (
-        <div className="space-y-2">
-          <Label htmlFor="teamMember">Profesional (opcional)</Label>
-          <Select value={formData.teamMemberId} onValueChange={(value) => handleSelectChange("teamMemberId", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona un profesional" />
-            </SelectTrigger>
-            <SelectContent>
-              {teamMembers.map((member) => (
-                <SelectItem key={member.id} value={member.id}>
-                  {member.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      <div className="space-y-2">
-        <Label>Fecha</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP", { locale: es }) : "Selecciona una fecha"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-              disabled={(date) => {
-                const dayOfWeek = date.getDay()
-                return date < new Date() || !availability.some((a) => a.day_of_week === dayOfWeek)
-              }}
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button 
+          className="fixed right-4 bottom-4 shadow-lg bg-primary hover:bg-primary/90 text-white gap-2 z-50"
+          size="lg"
+        >
+          <CalendarIcon2 className="h-5 w-5" />
+          Reservar turno
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Reservar turno</SheetTitle>
+        </SheetHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre completo</Label>
+            <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="tu@email.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
             />
-          </PopoverContent>
-        </Popover>
-      </div>
-      {date && availableTimes.length > 0 && (
-        <div className="space-y-2">
-          <Label htmlFor="time">Horario</Label>
-          <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona un horario" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableTimes.map((time) => (
-                <SelectItem key={time} value={time}>
-                  {time}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notas adicionales (opcional)</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          placeholder="Información adicional que quieras compartir"
-          value={formData.notes}
-          onChange={handleChange}
-        />
-      </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Reservando..." : "Reservar turno"}
-      </Button>
-    </form>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Seleccionar país" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOUTH_AMERICAN_COUNTRIES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name} ({country.prefix})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.displayPhone}
+                onChange={handleChange}
+                placeholder="Ej: 9112345678"
+                required
+                className="flex-1"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Ingresa tu número sin espacios ni guiones. Ejemplo: 9112345678
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="service">Servicio</Label>
+            <Select value={formData.serviceId} onValueChange={(value) => handleSelectChange("serviceId", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un servicio" />
+              </SelectTrigger>
+              <SelectContent>
+                {services.map((service) => (
+                  <SelectItem key={service.id} value={service.id}>
+                    {service.name} ({service.duration} min)
+                    {service.price ? ` - ${service.price.toFixed(2)}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {teamMembers.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="teamMember">Profesional (opcional)</Label>
+              <Select value={formData.teamMemberId} onValueChange={(value) => handleSelectChange("teamMemberId", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un profesional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>Fecha</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP", { locale: es }) : "Selecciona una fecha"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                  disabled={(date) => {
+                    const dayOfWeek = date.getDay()
+                    return date < new Date() || !availability.some((a) => a.day_of_week === dayOfWeek)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          {date && availableTimes.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="time">Horario</Label>
+              <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un horario" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTimes.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              placeholder="Información adicional que quieras compartir"
+              value={formData.notes}
+              onChange={handleChange}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Reservando..." : "Reservar turno"}
+          </Button>
+        </form>
+      </SheetContent>
+    </Sheet>
   )
 }
