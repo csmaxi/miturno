@@ -85,7 +85,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     const currentRoute = routes.find(route => route.active);
     
     return (
-      <div className="md:hidden flex items-center justify-between w-full border-b px-4 h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="md:hidden flex items-center justify-between w-full border-b px-4 h-14 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 fixed top-0 left-0 z-50">
         <div className="flex items-center gap-2">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -94,11 +94,11 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 <span className="sr-only">Menú</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="w-64 p-0 h-screen">
               <SheetHeader className="p-4 border-b">
                 <SheetTitle>Menú</SheetTitle>
               </SheetHeader>
-              <div className="flex flex-col h-full">
+              <div className="flex flex-col h-[calc(100vh-3.5rem)]">
                 <div className="flex-1 overflow-auto py-2">
                   <nav className="grid items-start px-2 text-sm font-medium">
                     {routes.map((route) => (
@@ -128,10 +128,6 @@ export function DashboardNav({ user }: DashboardNavProps) {
                       <p className="text-xs text-muted-foreground">@{user.username}</p>
                     </div>
                   </div>
-                  {/* <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar sesión
-                  </Button> */}
                 </div>
               </div>
             </SheetContent>
@@ -149,7 +145,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
 
   // Versión desktop
   const DesktopNav = () => (
-    <div className="hidden md:flex flex-col w-64 border-r bg-muted/40 h-screen">
+    <div className="hidden md:flex flex-col w-64 border-r bg-muted/40 h-[calc(100vh-3.5rem)]">
      
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-2 text-sm font-medium">
@@ -179,10 +175,6 @@ export function DashboardNav({ user }: DashboardNavProps) {
             <p className="text-xs text-muted-foreground">@{user.username}</p>
           </div>
         </div>
-        {/* <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Cerrar sesión
-        </Button> */}
       </div>
     </div>
   )
