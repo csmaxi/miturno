@@ -173,13 +173,13 @@ export default async function UserProfilePage({
                       className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0"
                     >
                       <div>
-                        <h3 className="font-medium">{service.name}</h3>
+                        <h3 className="font-bold">{service.name}</h3>
                         {service.description && (
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-md text-gray-500 mt-1">
                             {service.description}
                           </p>
                         )}
-                        <p className="text-sm mt-1">Duración: {service.duration} minutos</p>
+                        <p className="text-sm text-muted-foreground mt-1">{service.duration} min</p>
                       </div>
                       {service.price && (
                         <div className="font-medium">${service.price.toFixed(2)}</div>

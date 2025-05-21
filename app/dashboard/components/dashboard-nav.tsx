@@ -182,7 +182,9 @@ export function DashboardNav({ user }: DashboardNavProps) {
   return (
     <>
       <MobileNav />
-      <DesktopNav />
+      <div className="md:pl-64 pt-14 md:pt-0">
+        <DesktopNav />
+      </div>
     </>
   )
 }
