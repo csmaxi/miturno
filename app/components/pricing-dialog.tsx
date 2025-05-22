@@ -161,7 +161,7 @@ export function PricingDialog() {
             <CardFooter>
               <Button
                 className="w-full"
-                onClick={() => handleSubscribe("premium", 5000)}
+                onClick={() => handleSubscribe("premium", 1)}
                 disabled={loading === "premium"}
               >
                 {loading === "premium" ? "Procesando..." : "Actualizar a Premium"}

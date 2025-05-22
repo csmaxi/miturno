@@ -34,7 +34,7 @@ export function UpgradeButton({ className, variant = "default" }: UpgradeButtonP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           plan: "premium",
-          price: 5000,
+          price: 1,
           userId: session.user.id,
         }),
       })
