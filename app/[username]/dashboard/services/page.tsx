@@ -34,8 +34,7 @@ interface Service {
 
 const PLANS = {
   free: { services: 3 },
-  basic: { services: 5 },
-  pro: { services: Infinity }
+  premium: { services: Infinity }
 }
 
 export default function ServicesPage() {

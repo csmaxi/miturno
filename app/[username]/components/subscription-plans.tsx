@@ -7,7 +7,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Check } from "lucide-react"
 
-const PLANS = [
+const plans = [
   {
     name: "Free",
     price: 0,
@@ -15,18 +15,17 @@ const PLANS = [
       "10 turnos (pendientes y confirmados)",
       "3 servicios",
       "1 miembro del equipo",
-      "Notificaciones por WhatsApp",
-      "Calendario básico"
+      "Calendario básico",
+      "Notificaciones por email",
+      "Estadísticas básicas"
     ],
-    limits: {
-      appointments: 10,
-      services: 3,
-      teamMembers: 1
-    }
+    buttonText: "Plan actual",
+    buttonVariant: "outline" as const,
+    isCurrentPlan: true
   },
   {
     name: "Premium",
-    price: 1,
+    price: 999,
     features: [
       "Turnos ilimitados",
       "Servicios ilimitados",
@@ -36,11 +35,9 @@ const PLANS = [
       "Estadísticas avanzadas",
       "Soporte prioritario"
     ],
-    limits: {
-      appointments: Infinity,
-      services: Infinity,
-      teamMembers: Infinity
-    }
+    buttonText: "Actualizar plan",
+    buttonVariant: "default" as const,
+    isCurrentPlan: false
   }
 ]
 
@@ -119,7 +116,7 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {PLANS.map((plan) => (
+      {plans.map((plan) => (
         <Card key={plan.name} className={currentPlan === plan.name.toLowerCase() ? "border-primary" : ""}>
           <CardHeader>
             <CardTitle>{plan.name}</CardTitle>

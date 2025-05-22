@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 
-export type SubscriptionPlan = "free" | "basic" | "pro"
+export type SubscriptionPlan = "free" | "premium"
 
 export interface SubscriptionLimits {
   appointments: number
@@ -19,16 +19,11 @@ export interface Subscription {
 
 const PLAN_LIMITS: Record<SubscriptionPlan, SubscriptionLimits> = {
   free: {
-    appointments: 15,
+    appointments: 10,
     services: 3,
     teamMembers: 1
   },
-  basic: {
-    appointments: 30,
-    services: 5,
-    teamMembers: 3
-  },
-  pro: {
+  premium: {
     appointments: Infinity,
     services: Infinity,
     teamMembers: Infinity

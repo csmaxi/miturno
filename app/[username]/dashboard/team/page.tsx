@@ -32,8 +32,7 @@ interface TeamMember {
 
 const PLANS = {
   free: { teamMembers: 1 },
-  basic: { teamMembers: 2 },
-  pro: { teamMembers: Infinity }
+  premium: { teamMembers: Infinity }
 }
 
 export default function TeamPage() {

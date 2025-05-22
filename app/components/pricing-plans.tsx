@@ -8,7 +8,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { motion } from "framer-motion"
 
-const PLANS = [
+const plans = [
   {
     name: "Free",
     price: 0,
@@ -16,18 +16,16 @@ const PLANS = [
       "10 turnos (pendientes y confirmados)",
       "3 servicios",
       "1 miembro del equipo",
-      "Notificaciones por WhatsApp",
-      "Calendario básico"
+      "Calendario básico",
+      "Notificaciones por email",
+      "Estadísticas básicas"
     ],
-    limits: {
-      appointments: 10,
-      services: 3,
-      teamMembers: 1
-    }
+    buttonText: "Comenzar gratis",
+    buttonVariant: "outline" as const
   },
   {
     name: "Premium",
-    price: 1,
+    price: 999,
     features: [
       "Turnos ilimitados",
       "Servicios ilimitados",
@@ -37,16 +35,13 @@ const PLANS = [
       "Estadísticas avanzadas",
       "Soporte prioritario"
     ],
-    limits: {
-      appointments: Infinity,
-      services: Infinity,
-      teamMembers: Infinity
-    }
+    buttonText: "Obtener Premium",
+    buttonVariant: "default" as const
   }
 ]
 
 function PlanCard({ plan, onSubscribe, loading }: { 
-  plan: typeof PLANS[0], 
+  plan: typeof plans[0], 
   onSubscribe: (plan: string, price: number) => Promise<void>,
   loading: string | null 
 }) {
