@@ -6,10 +6,12 @@ import { Navbar } from "@/components/navbar"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function PaymentSuccessPage() {
   const router = useRouter()
   const supabase = createClientSupabaseClient()
+  const { toast } = useToast()
 
   useEffect(() => {
     const checkSession = async () => {
@@ -20,12 +22,49 @@ export default function PaymentSuccessPage() {
         if (!newSession) {
           // Si aún no hay sesión, redirigimos al login
           router.push('/login')
+          return
+        }
+      }
+
+      // Verificar y actualizar el estado de la suscripción
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", session?.user.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+
+      if (subscription) {
+        // Actualizar el plan del usuario
+        const { error: userError } = await supabase
+          .from("users")
+          .update({ subscription_plan: subscription.plan })
+          .eq("id", session?.user.id)
+
+        if (userError) {
+          console.error("Error updating user plan:", userError)
+          toast({
+            title: "Error",
+            description: "Hubo un problema al actualizar tu plan. Por favor, contacta a soporte.",
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "¡Plan actualizado!",
+            description: "Tu plan Premium ha sido activado correctamente.",
+          })
+          // Redirigir al dashboard después de un breve delay
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 2000)
         }
       }
     }
 
     checkSession()
-  }, [router, supabase])
+  }, [router, supabase, toast])
 
   return (
     <div className="min-h-screen flex flex-col">

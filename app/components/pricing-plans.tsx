@@ -13,38 +13,21 @@ const PLANS = [
     name: "Free",
     price: 0,
     features: [
-      "15 turnos por mes",
+      "10 turnos (pendientes y confirmados)",
       "3 servicios",
       "1 miembro del equipo",
       "Notificaciones por WhatsApp",
       "Calendario básico"
     ],
     limits: {
-      appointments: 15,
+      appointments: 10,
       services: 3,
       teamMembers: 1
     }
   },
   {
-    name: "Basic",
+    name: "Premium",
     price: 1,
-    features: [
-      "30 turnos por mes",
-      "5 servicios",
-      "3 miembros del equipo",
-      "Notificaciones por WhatsApp",
-      "Calendario avanzado",
-      "Estadísticas básicas"
-    ],
-    limits: {
-      appointments: 30,
-      services: 5,
-      teamMembers: 3
-    }
-  },
-  {
-    name: "Pro",
-    price: 2,
     features: [
       "Turnos ilimitados",
       "Servicios ilimitados",
