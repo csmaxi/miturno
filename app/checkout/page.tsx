@@ -56,11 +56,11 @@ export default function CheckoutPage() {
               <CardContent>
                 <div className="flex justify-between py-2 border-b">
                   <span>Plan Básico</span>
-                  <span>$5,000.00</span>
+                  <span>$1.00</span>
                 </div>
                 <div className="flex justify-between py-4 font-bold">
                   <span>Total</span>
-                  <span>$5,000.00</span>
+                  <span>$1.00</span>
                 </div>
 
                 <div className="mt-6">

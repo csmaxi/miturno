@@ -27,6 +27,7 @@ import {
 } from "@/lib/whatsapp-direct-service"
 import { useUserContext } from "@/lib/context/UserContext"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { UpgradeButton } from "@/app/components/upgrade-button"
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
@@ -327,8 +328,9 @@ export default function AppointmentsPage() {
       {hasReachedAppointmentLimit && (
         <Alert variant="default" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-900 dark:text-yellow-200">
           <Info className="h-4 w-4" />
-          <AlertDescription>
-            Has alcanzado el límite de 10 turnos (pendientes + confirmados). Los turnos adicionales no podrán ser confirmados hasta que se libere espacio.
+          <AlertDescription className="flex items-center justify-between">
+            <span>Has alcanzado el límite de 10 turnos (pendientes + confirmados). Los turnos adicionales no podrán ser confirmados hasta que se libere espacio.</span>
+            <UpgradeButton variant="outline" className="ml-4" />
           </AlertDescription>
         </Alert>
       )}
@@ -336,8 +338,9 @@ export default function AppointmentsPage() {
       {hiddenPendingCount > 0 && (
         <Alert variant="default" className="bg-orange-50 dark:bg-orange-900/50">
           <Info className="h-4 w-4" />
-          <AlertDescription>
-            Hay {hiddenPendingCount} turno(s) pendiente(s) oculto(s) por el límite de 10 turnos activos.
+          <AlertDescription className="flex items-center justify-between">
+            <span>Hay {hiddenPendingCount} turno(s) pendiente(s) oculto(s) por el límite de 10 turnos activos.</span>
+            <UpgradeButton variant="outline" className="ml-4" />
           </AlertDescription>
         </Alert>
       )}

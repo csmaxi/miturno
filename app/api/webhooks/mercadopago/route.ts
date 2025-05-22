@@ -47,7 +47,7 @@ export async function PUT(request: Request) {
             .update({
               status: "active",
               current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
             })
             .eq("user_id", userId)
             .eq("mercadopago_subscription_id", paymentId)
@@ -110,7 +110,7 @@ async function handleMerchantOrder(orderId: string | null) {
         .update({
           status: "active",
           current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq("user_id", userId)
         .eq("mercadopago_subscription_id", paymentId)

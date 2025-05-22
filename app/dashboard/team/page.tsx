@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Trash, Users, Instagram, Upload } from "lucide-react"
+import { Plus, Trash, Users, Instagram, Upload, AlertCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from 'next/image'
+import { UpgradeButton } from "@/app/components/upgrade-button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function TeamPage() {
   const { toast } = useToast()
@@ -33,6 +35,7 @@ export default function TeamPage() {
     image_url: "",
   })
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [hasReachedLimit, setHasReachedLimit] = useState(false)
 
   const supabase = createClientSupabaseClient()
 
@@ -51,6 +54,7 @@ export default function TeamPage() {
 
         if (error) throw error
         setTeamMembers(data || [])
+        setHasReachedLimit(data.length >= 1)
       }
     } catch (error: any) {
       toast({
@@ -290,6 +294,17 @@ export default function TeamPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {hasReachedLimit && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Límite alcanzado</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>Has alcanzado el límite de miembros del equipo de tu plan actual.</span>
+            <UpgradeButton variant="outline" className="ml-4" />
+          </AlertDescription>
+        </Alert>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">

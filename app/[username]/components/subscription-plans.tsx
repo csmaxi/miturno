@@ -12,38 +12,21 @@ const PLANS = [
     name: "Free",
     price: 0,
     features: [
-      "15 turnos por mes",
+      "10 turnos (pendientes y confirmados)",
       "3 servicios",
       "1 miembro del equipo",
       "Notificaciones por WhatsApp",
       "Calendario básico"
     ],
     limits: {
-      appointments: 15,
+      appointments: 10,
       services: 3,
       teamMembers: 1
     }
   },
   {
-    name: "Basic",
-    price: 9.99,
-    features: [
-      "30 turnos por mes",
-      "5 servicios",
-      "2 miembros del equipo",
-      "Notificaciones por WhatsApp",
-      "Calendario avanzado",
-      "Estadísticas básicas"
-    ],
-    limits: {
-      appointments: 30,
-      services: 5,
-      teamMembers: 2
-    }
-  },
-  {
-    name: "Pro",
-    price: 19.99,
+    name: "Premium",
+    price: 1,
     features: [
       "Turnos ilimitados",
       "Servicios ilimitados",
@@ -72,26 +55,61 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
   const [loading, setLoading] = useState<string | null>(null)
 
   const handlePlanChange = async (plan: string) => {
+    if (plan === currentPlan) return
+
     setLoading(plan)
     try {
       const supabase = createClientSupabaseClient()
-      
-      const { error } = await supabase
-        .from("users")
-        .update({ subscription_plan: plan })
-        .eq("id", userId)
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (error) throw error
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "Debes iniciar sesión para cambiar de plan",
+          variant: "destructive",
+        })
+        return
+      }
 
-      onPlanChange(plan)
-      toast({
-        title: "Plan actualizado",
-        description: `Tu plan ha sido actualizado a ${plan}.`,
-      })
+      if (plan === "free") {
+        // Actualizar a plan gratuito
+        const { error } = await supabase
+          .from("subscriptions")
+          .update({ plan: "free", status: "active" })
+          .eq("user_id", userId)
+
+        if (error) throw error
+
+        toast({
+          title: "Plan actualizado",
+          description: "Has cambiado al plan gratuito",
+        })
+        onPlanChange("free")
+      } else {
+        // Crear preferencia de pago en MercadoPago
+        const response = await fetch("/api/create-payment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            plan: "premium",
+            price: 1,
+            userId: session.user.id,
+          }),
+        })
+
+        if (!response.ok) throw new Error("Error al crear el pago")
+
+        const { init_point } = await response.json()
+
+        // Redirigir a MercadoPago
+        window.location.href = init_point
+      }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo actualizar el plan",
+        description: error.message || "No se pudo cambiar el plan",
         variant: "destructive",
       })
     } finally {
@@ -100,13 +118,13 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2">
       {PLANS.map((plan) => (
         <Card key={plan.name} className={currentPlan === plan.name.toLowerCase() ? "border-primary" : ""}>
           <CardHeader>
             <CardTitle>{plan.name}</CardTitle>
             <CardDescription>
-              {plan.price === 0 ? "Gratis" : `$${plan.price}/mes`}
+              {plan.price === 0 ? "Gratis" : `$${plan.price.toLocaleString('es-AR')}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -130,7 +148,9 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
                 ? "Actualizando..."
                 : currentPlan === plan.name.toLowerCase()
                 ? "Plan actual"
-                : "Cambiar plan"}
+                : plan.price === 0
+                ? "Cambiar a plan gratuito"
+                : "Actualizar a Premium"}
             </Button>
           </CardFooter>
         </Card>
