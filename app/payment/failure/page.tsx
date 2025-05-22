@@ -2,8 +2,30 @@ import { Button } from "@/components/ui/button"
 import { XCircle } from "lucide-react"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function PaymentFailurePage() {
+  const router = useRouter()
+  const supabase = createClientSupabaseClient()
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        // Si no hay sesión, intentamos refrescar el token
+        const { data: { session: newSession } } = await supabase.auth.refreshSession()
+        if (!newSession) {
+          // Si aún no hay sesión, redirigimos al login
+          router.push('/login')
+        }
+      }
+    }
+
+    checkSession()
+  }, [router, supabase])
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

@@ -42,7 +42,9 @@ export async function PUT(request: Request) {
           console.log("Processing approved payment for user:", userId, "plan:", plan)
 
           const supabase = createServerSupabaseClient()
-          const { error } = await supabase
+          
+          // Actualizar la suscripción
+          const { error: subscriptionError } = await supabase
             .from("subscriptions")
             .update({
               status: "active",
@@ -52,14 +54,29 @@ export async function PUT(request: Request) {
             .eq("user_id", userId)
             .eq("mercadopago_subscription_id", paymentId)
 
-          if (error) {
-            console.error("Error updating subscription:", error)
+          if (subscriptionError) {
+            console.error("Error updating subscription:", subscriptionError)
             return NextResponse.json(
               { error: "Error al actualizar la suscripción" },
               { status: 500 }
             )
           }
-          console.log("Subscription updated successfully")
+
+          // Actualizar el plan del usuario
+          const { error: userError } = await supabase
+            .from("users")
+            .update({ subscription_plan: plan.toLowerCase() })
+            .eq("id", userId)
+
+          if (userError) {
+            console.error("Error updating user plan:", userError)
+            return NextResponse.json(
+              { error: "Error al actualizar el plan del usuario" },
+              { status: 500 }
+            )
+          }
+
+          console.log("Subscription and user plan updated successfully")
         }
       } catch (error) {
         console.error("Error processing payment webhook:", error)
@@ -105,7 +122,9 @@ async function handleMerchantOrder(orderId: string | null) {
       console.log("Processing paid order for user:", userId, "plan:", plan)
 
       const supabase = createServerSupabaseClient()
-      const { error } = await supabase
+      
+      // Actualizar la suscripción
+      const { error: subscriptionError } = await supabase
         .from("subscriptions")
         .update({
           status: "active",
@@ -115,14 +134,29 @@ async function handleMerchantOrder(orderId: string | null) {
         .eq("user_id", userId)
         .eq("mercadopago_subscription_id", paymentId)
 
-      if (error) {
-        console.error("Error updating subscription:", error)
+      if (subscriptionError) {
+        console.error("Error updating subscription:", subscriptionError)
         return NextResponse.json(
           { error: "Error al actualizar la suscripción" },
           { status: 500 }
         )
       }
-      console.log("Subscription updated successfully from merchant order")
+
+      // Actualizar el plan del usuario
+      const { error: userError } = await supabase
+        .from("users")
+        .update({ subscription_plan: plan.toLowerCase() })
+        .eq("id", userId)
+
+      if (userError) {
+        console.error("Error updating user plan:", userError)
+        return NextResponse.json(
+          { error: "Error al actualizar el plan del usuario" },
+          { status: 500 }
+        )
+      }
+
+      console.log("Subscription and user plan updated successfully from merchant order")
     }
 
     return NextResponse.json({ success: true })

@@ -127,7 +127,7 @@ async function handlePayment(paymentId: string) {
 
     // Crear la suscripción en la base de datos
     const supabase = createServerSupabaseClient()
-    const { error } = await supabase
+    const { error: subscriptionError } = await supabase
       .from("subscriptions")
       .insert({
         user_id: userId,
@@ -138,10 +138,24 @@ async function handlePayment(paymentId: string) {
         current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       })
 
-    if (error) {
-      console.error("Error creating subscription:", error)
+    if (subscriptionError) {
+      console.error("Error creating subscription:", subscriptionError)
       return NextResponse.json(
         { error: "Error al crear la suscripción" },
+        { status: 500 }
+      )
+    }
+
+    // Actualizar el plan del usuario
+    const { error: userError } = await supabase
+      .from("users")
+      .update({ subscription_plan: plan.toLowerCase() })
+      .eq("id", userId)
+
+    if (userError) {
+      console.error("Error updating user plan:", userError)
+      return NextResponse.json(
+        { error: "Error al actualizar el plan del usuario" },
         { status: 500 }
       )
     }
