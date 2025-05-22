@@ -43,7 +43,7 @@ export function PricingDialog() {
         },
         body: JSON.stringify({
           plan: "premium",
-          price: 5000,
+          price: 1,
           userId: session.user.id,
         }),
       })
