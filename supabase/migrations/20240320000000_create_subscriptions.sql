@@ -44,7 +44,7 @@ BEGIN
     -- Set limits based on plan
     current_limits := CASE current_plan
         WHEN 'free' THEN '{"appointments": 10, "services": 3, "team_members": 1}'::JSONB
-        WHEN 'premium' THEN '{"appointments": null, "services": null, "team_members": null}'::JSONB
+        WHEN 'premium' THEN '{"appointments": 999999, "services": 999999, "team_members": 999999}'::JSONB
         ELSE '{"appointments": 10, "services": 3, "team_members": 1}'::JSONB
     END;
 

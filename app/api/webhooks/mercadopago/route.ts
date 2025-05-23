@@ -46,18 +46,19 @@ export async function PUT(request: Request) {
           // Actualizar la suscripción
           const { error: subscriptionError } = await supabase
             .from("subscriptions")
-            .update({
+            .insert({
+              user_id: userId,
+              plan: "premium",
               status: "active",
+              mercadopago_subscription_id: paymentId,
               current_period_start: new Date().toISOString(),
               current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
             })
-            .eq("user_id", userId)
-            .eq("mercadopago_subscription_id", paymentId)
 
           if (subscriptionError) {
-            console.error("Error updating subscription:", subscriptionError)
+            console.error("Error creating subscription:", subscriptionError)
             return NextResponse.json(
-              { error: "Error al actualizar la suscripción" },
+              { error: "Error al crear la suscripción" },
               { status: 500 }
             )
           }
@@ -65,7 +66,7 @@ export async function PUT(request: Request) {
           // Actualizar el plan del usuario
           const { error: userError } = await supabase
             .from("users")
-            .update({ subscription_plan: plan.toLowerCase() })
+            .update({ subscription_plan: "premium" })
             .eq("id", userId)
 
           if (userError) {

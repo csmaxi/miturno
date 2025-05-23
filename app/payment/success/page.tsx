@@ -3,67 +3,65 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 export default function PaymentSuccessPage() {
   const router = useRouter()
-  const supabase = createClientSupabaseClient()
   const { toast } = useToast()
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        // Si no hay sesión, intentamos refrescar el token
-        const { data: { session: newSession } } = await supabase.auth.refreshSession()
-        if (!newSession) {
-          // Si aún no hay sesión, redirigimos al login
-          router.push('/login')
+    const handlePaymentSuccess = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          router.push("/login")
           return
         }
-      }
 
-      // Verificar y actualizar el estado de la suscripción
-      const { data: subscription } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", session?.user.id)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
-
-      if (subscription) {
-        // Actualizar el plan del usuario
-        const { error: userError } = await supabase
+        // Actualizar el plan del usuario a premium
+        const { error: updateError } = await supabase
           .from("users")
-          .update({ subscription_plan: subscription.plan })
-          .eq("id", session?.user.id)
+          .update({ subscription_plan: "premium" })
+          .eq("id", session.user.id)
 
-        if (userError) {
-          console.error("Error updating user plan:", userError)
+        if (updateError) {
+          console.error("Error updating subscription plan:", updateError)
           toast({
             title: "Error",
-            description: "Hubo un problema al actualizar tu plan. Por favor, contacta a soporte.",
+            description: "Hubo un error al actualizar tu plan. Por favor, contacta a soporte.",
             variant: "destructive",
           })
-        } else {
-          toast({
-            title: "¡Plan actualizado!",
-            description: "Tu plan Premium ha sido activado correctamente.",
-          })
-          // Redirigir al dashboard después de un breve delay
-          setTimeout(() => {
-            router.push('/dashboard')
-          }, 2000)
+          return
         }
+
+        // Refrescar la sesión para que se actualice el plan
+        await supabase.auth.refreshSession()
+
+        toast({
+          title: "¡Plan actualizado!",
+          description: "Tu plan ha sido actualizado correctamente.",
+        })
+
+        // Redirigir al dashboard después de un breve delay
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 2000)
+      } catch (error) {
+        console.error("Error handling payment success:", error)
+        toast({
+          title: "Error",
+          description: "Hubo un error al procesar tu pago. Por favor, contacta a soporte.",
+          variant: "destructive",
+        })
       }
     }
 
-    checkSession()
+    handlePaymentSuccess()
   }, [router, supabase, toast])
 
   return (
