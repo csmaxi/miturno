@@ -1,14 +1,13 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Trash, Users, Instagram, Upload, AlertCircle } from "lucide-react"
+import { Users, Plus, Trash } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -18,13 +17,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Image from 'next/image'
+import { useUserContext } from "@/lib/context/UserContext"
 import { UpgradeButton } from "@/app/components/upgrade-button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
+const PLANS = {
+  free: { teamMembers: 1 },
+  premium: { teamMembers: Infinity }
+}
+
 export default function TeamPage() {
   const { toast } = useToast()
+  const { user, loading: userLoading, userPlan, refetchUserPlan } = useUserContext()
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -34,28 +38,24 @@ export default function TeamPage() {
     instagram: "",
     image_url: "",
   })
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const [hasReachedLimit, setHasReachedLimit] = useState(false)
 
   const supabase = createClientSupabaseClient()
+  const teamList = useMemo(() => teamMembers || [], [teamMembers])
+  const maxTeamReached = teamList.length >= PLANS[userPlan as keyof typeof PLANS].teamMembers
+  const hasReachedLimit = teamList.length >= PLANS[userPlan as keyof typeof PLANS].teamMembers
 
   const fetchTeamMembers = async () => {
+    if (!user) return
     setLoading(true)
     try {
-      const { data: userData } = await supabase.auth.getUser()
-
-      if (userData.user) {
         const { data, error } = await supabase
           .from("team_members")
           .select("*")
-          .eq("user_id", userData.user.id)
+        .eq("user_id", user.id)
           .order("created_at", { ascending: false })
-          .limit(1)
 
         if (error) throw error
         setTeamMembers(data || [])
-        setHasReachedLimit(data.length >= 1)
-      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -69,9 +69,9 @@ export default function TeamPage() {
 
   useEffect(() => {
     fetchTeamMembers()
-  }, [])
+  }, [user])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -79,35 +79,29 @@ export default function TeamPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (teamMembers.length >= 1) {
+    if (hasReachedLimit) {
       toast({
         title: "Límite alcanzado",
-        description: "Solo puedes agregar un miembro al equipo",
+        description: `Tu plan actual (${userPlan}) permite un máximo de ${PLANS[userPlan as keyof typeof PLANS].teamMembers} miembro(s) del equipo. Actualiza tu plan para agregar más miembros.`,
         variant: "destructive",
       })
       return
     }
 
     try {
-      const { data: userData } = await supabase.auth.getUser()
-
-      if (!userData.user) {
-        throw new Error("Usuario no autenticado")
-      }
-
       const { error } = await supabase.from("team_members").insert({
-        user_id: userData.user.id,
+        user_id: user?.id,
         name: formData.name,
-        position: formData.position || null,
-        bio: formData.instagram || null,
-        image_url: formData.image_url || null,
+        position: formData.position,
+        instagram: formData.instagram,
+        image_url: formData.image_url,
       })
 
       if (error) throw error
 
       toast({
         title: "Miembro agregado",
-        description: "El miembro ha sido agregado exitosamente al equipo",
+        description: "El miembro ha sido agregado exitosamente",
       })
 
       setFormData({
@@ -122,14 +116,14 @@ export default function TeamPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo agregar el miembro al equipo",
+        description: error.message || "No se pudo agregar el miembro",
         variant: "destructive",
       })
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este miembro del equipo?")) {
+    if (!confirm("¿Estás seguro de que deseas eliminar este miembro?")) {
       return
     }
 
@@ -140,164 +134,102 @@ export default function TeamPage() {
 
       toast({
         title: "Miembro eliminado",
-        description: "El miembro ha sido eliminado exitosamente del equipo",
+        description: "El miembro ha sido eliminado exitosamente",
       })
 
       fetchTeamMembers()
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo eliminar el miembro del equipo",
+        description: error.message || "No se pudo eliminar el miembro",
         variant: "destructive",
       })
     }
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      const file = e.target.files?.[0]
-      if (!file) return
-
-      setUploadingImage(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Usuario no autenticado")
-
-      const fileExt = file.name.split(".").pop()
-      const filePath = `${user.id}/team_${Date.now()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from("profiles")
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("profiles")
-        .getPublicUrl(filePath)
-
-      setFormData(prev => ({ ...prev, image_url: publicUrl }))
-
-      toast({
-        title: "Imagen subida",
-        description: "La imagen se subió correctamente",
-      })
-
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Error al subir la imagen",
-        variant: "destructive",
-      })
-    } finally {
-      setUploadingImage(false)
-    }
-  }
-
-  const hasMember = teamMembers.length >= 1
+  const loadingSkeleton = useMemo(() => {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+      </div>
+    )
+  }, [])
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Equipo</h1>
+        <h1 className="text-3xl font-bold">Equipo</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          {hasMember ? (
-            <Button variant="destructive" disabled>
+          <DialogTrigger asChild>
+            <Button
+              onClick={() => !maxTeamReached && setOpen(true)}
+              disabled={maxTeamReached}
+              variant={maxTeamReached ? "destructive" : "default"}
+            >
               <Plus className="mr-2 h-4 w-4" />
-              Límite alcanzado
-            </Button>
-          ) : (
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar miembro
+              {maxTeamReached ? "Límite alcanzado" : "Nuevo miembro"}
               </Button>
             </DialogTrigger>
-          )}
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Agregar miembro del equipo</DialogTitle>
-              <DialogDescription>
-                Agrega un nuevo miembro a tu equipo. Podrás editarlo o eliminarlo más tarde.
-              </DialogDescription>
+              <DialogTitle>Agregar miembro al equipo</DialogTitle>
+              <DialogDescription>Agrega un nuevo miembro a tu equipo</DialogDescription>
             </DialogHeader>
+            <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
+                <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
                 <Input
                   id="name"
                   name="name"
+                    placeholder="Nombre del miembro"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="Nombre del miembro"
+                    required
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="position">Cargo</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="position">Posición</Label>
                 <Input
                   id="position"
                   name="position"
+                    placeholder="Ej: Peluquero"
                   value={formData.position}
                   onChange={handleChange}
-                  placeholder="Cargo o rol"
+                    required
                 />
               </div>
-              <div className="grid gap-2">
+                <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram</Label>
                 <Input
                   id="instagram"
                   name="instagram"
+                    placeholder="@usuario"
                   value={formData.instagram}
                   onChange={handleChange}
-                  placeholder="@usuario"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label>Imagen de perfil</Label>
-                <div className="flex flex-col items-center gap-4">
-                  <Avatar className="h-24 w-24">
-                    {formData.image_url ? (
-                      <AvatarImage src={formData.image_url} alt={formData.name} />
-                    ) : (
-                      <AvatarFallback className="text-2xl">
-                        {formData.name ? formData.name.substring(0, 2).toUpperCase() : "??"}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="space-y-2 w-full">
-                    <div className="flex items-center gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="image_url">URL de la imagen</Label>
                       <Input
-                        id="team_image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                        disabled={uploadingImage}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById("team_image")?.click()}
-                        className="w-full"
-                        disabled={uploadingImage}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        {uploadingImage ? "Subiendo..." : "Seleccionar imagen"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                    id="image_url"
+                    name="image_url"
+                    placeholder="https://..."
+                    value={formData.image_url}
+                    onChange={handleChange}
+                  />
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleSubmit} disabled={uploadingImage}>Agregar miembro</Button>
+                <Button type="submit">Guardar miembro</Button>
             </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {hasReachedLimit && (
+      {hasReachedLimit && userPlan !== 'premium' && (
         <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
           <AlertTitle>Límite alcanzado</AlertTitle>
           <AlertDescription className="flex items-center justify-between">
             <span>Has alcanzado el límite de miembros del equipo de tu plan actual.</span>
@@ -306,62 +238,57 @@ export default function TeamPage() {
         </Alert>
       )}
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
-        </div>
-      ) : teamMembers.length === 0 ? (
+      {loading ? loadingSkeleton : teamList.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mb-4" />
-            <CardTitle className="mb-2">No hay miembros en el equipo</CardTitle>
-            <p className="text-muted-foreground">
-              Comienza agregando miembros a tu equipo para mostrarlos en tu perfil.
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <Users className="h-10 w-10 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium mb-2">No hay miembros</p>
+            <p className="text-muted-foreground text-center mb-6">
+              Aún no has agregado ningún miembro a tu equipo. Agrega miembros para que aparezcan en tu perfil.
             </p>
+            <Button
+              onClick={() => setOpen(true)}
+              disabled={maxTeamReached}
+              variant={maxTeamReached ? "destructive" : "default"}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {maxTeamReached ? "Límite alcanzado" : "Agregar miembro"}
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {teamMembers.map((member) => (
-            <Card key={member.id} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-end">
+          {teamList.map((member) => (
+            <Card key={member.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{member.name}</CardTitle>
+                    <CardDescription>{member.position}</CardDescription>
+                  </div>
                   <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id)}>
                     <Trash className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 pt-0">
-                <div className="flex flex-col items-center text-center">
-                  <Avatar className="h-24 w-24 mb-4 relative">
-                    {member.image_url ? (
-                      <Image
+              <CardContent>
+                {member.image_url && (
+                  <img
                         src={member.image_url}
                         alt={member.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 96px) 100vw, 96px"
+                    className="w-full h-48 object-cover rounded-lg mb-4"
                       />
-                    ) : (
-                      <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                     )}
-                  </Avatar>
-                  <CardTitle className="mb-1">{member.name}</CardTitle>
-                  {member.position && <p className="text-sm text-muted-foreground mb-2">{member.position}</p>}
                   {member.instagram && (
-                    <div className="flex items-center mt-2">
-                      <Instagram className="h-4 w-4 mr-1 text-pink-500" />
                       <a
-                        href={`https://instagram.com/${member.instagram.replace("@", "")}`}
+                    href={`https://instagram.com/${member.instagram.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-pink-500 hover:underline"
+                    className="text-sm text-muted-foreground hover:text-primary"
                       >
                         {member.instagram}
                       </a>
-                    </div>
                   )}
-                </div>
               </CardContent>
             </Card>
           ))}

@@ -31,7 +31,7 @@ import { UpgradeButton } from "@/app/components/upgrade-button"
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
-  const { user } = useUserContext()
+  const { user, userPlan } = useUserContext()
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [notes, setNotes] = useState("")
@@ -191,18 +191,19 @@ export default function AppointmentsPage() {
   const cancelledAppointments = useMemo(() =>
     appointments.filter(a => a.status === "cancelled"), [appointments])
 
-  const hasReachedAppointmentLimit = (pendingAppointments.length + confirmedAppointments.length) >= 10
+  const hasReachedAppointmentLimit = userPlan !== 'premium' && (pendingAppointments.length + confirmedAppointments.length) >= 10
 
   const visiblePendingAppointments = useMemo(() => {
+    if (userPlan === 'premium') return pendingAppointments
     const allowed = Math.max(0, 10 - confirmedAppointments.length)
     // Sort appointments by created_at in ascending order (oldest first)
     const sortedPending = [...pendingAppointments].sort((a, b) => 
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
     return sortedPending.slice(0, allowed)
-  }, [pendingAppointments, confirmedAppointments])
+  }, [pendingAppointments, confirmedAppointments, userPlan])
 
-  const hiddenPendingCount = pendingAppointments.length - visiblePendingAppointments.length
+  const hiddenPendingCount = userPlan === 'premium' ? 0 : pendingAppointments.length - visiblePendingAppointments.length
 
   const renderAppointmentList = (appointmentList: any[]) => {
     if (appointmentList.length === 0) {

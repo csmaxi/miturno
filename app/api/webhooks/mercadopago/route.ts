@@ -43,12 +43,38 @@ export async function PUT(request: Request) {
 
           const supabase = createServerSupabaseClient()
           
-          // Actualizar la suscripción
+          // Verificar si la suscripción ya existe
+          const { data: existingSubscription } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("mercadopago_subscription_id", paymentId)
+            .single()
+
+          if (existingSubscription) {
+            console.log("Subscription already exists:", existingSubscription)
+            return NextResponse.json({ success: true, message: "Subscription already exists" })
+          }
+
+          // Primero actualizar el plan del usuario
+          const { error: userError } = await supabase
+            .from("users")
+            .update({ subscription_plan: plan.toLowerCase() })
+            .eq("id", userId)
+
+          if (userError) {
+            console.error("Error updating user plan:", userError)
+            return NextResponse.json(
+              { error: "Error al actualizar el plan del usuario" },
+              { status: 500 }
+            )
+          }
+
+          // Luego crear la suscripción
           const { error: subscriptionError } = await supabase
             .from("subscriptions")
             .insert({
               user_id: userId,
-              plan: "premium",
+              plan: plan.toLowerCase(),
               status: "active",
               mercadopago_subscription_id: paymentId,
               current_period_start: new Date().toISOString(),
@@ -59,20 +85,6 @@ export async function PUT(request: Request) {
             console.error("Error creating subscription:", subscriptionError)
             return NextResponse.json(
               { error: "Error al crear la suscripción" },
-              { status: 500 }
-            )
-          }
-
-          // Actualizar el plan del usuario
-          const { error: userError } = await supabase
-            .from("users")
-            .update({ subscription_plan: "premium" })
-            .eq("id", userId)
-
-          if (userError) {
-            console.error("Error updating user plan:", userError)
-            return NextResponse.json(
-              { error: "Error al actualizar el plan del usuario" },
               { status: 500 }
             )
           }
@@ -124,23 +136,16 @@ async function handleMerchantOrder(orderId: string | null) {
 
       const supabase = createServerSupabaseClient()
       
-      // Actualizar la suscripción
-      const { error: subscriptionError } = await supabase
+      // Verificar si la suscripción ya existe
+      const { data: existingSubscription } = await supabase
         .from("subscriptions")
-        .update({
-          status: "active",
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        })
-        .eq("user_id", userId)
+        .select("*")
         .eq("mercadopago_subscription_id", paymentId)
+        .single()
 
-      if (subscriptionError) {
-        console.error("Error updating subscription:", subscriptionError)
-        return NextResponse.json(
-          { error: "Error al actualizar la suscripción" },
-          { status: 500 }
-        )
+      if (existingSubscription) {
+        console.log("Subscription already exists:", existingSubscription)
+        return NextResponse.json({ success: true, message: "Subscription already exists" })
       }
 
       // Actualizar el plan del usuario
@@ -153,6 +158,26 @@ async function handleMerchantOrder(orderId: string | null) {
         console.error("Error updating user plan:", userError)
         return NextResponse.json(
           { error: "Error al actualizar el plan del usuario" },
+          { status: 500 }
+        )
+      }
+
+      // Crear la suscripción
+      const { error: subscriptionError } = await supabase
+        .from("subscriptions")
+        .insert({
+          user_id: userId,
+          plan: plan.toLowerCase(),
+          status: "active",
+          mercadopago_subscription_id: paymentId,
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+
+      if (subscriptionError) {
+        console.error("Error creating subscription:", subscriptionError)
+        return NextResponse.json(
+          { error: "Error al crear la suscripción" },
           { status: 500 }
         )
       }

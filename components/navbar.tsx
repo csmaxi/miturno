@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useAuthStore } from "@/lib/store/auth-store"
 import { useUserContext } from "@/lib/context/UserContext"
+import { Badge } from "@/components/ui/badge"
 
 export function Navbar() {
   const pathname = usePathname()
@@ -18,7 +19,7 @@ export function Navbar() {
   const router = useRouter()
   const supabase = useMemo(() => createClientSupabaseClient(), [])
   const { setUser, setUserData } = useAuthStore()
-  const { user, loading } = useUserContext()
+  const { user, loading, userPlan } = useUserContext()
 
   const handleSignOut = async () => {
     try {
@@ -69,6 +70,11 @@ export function Navbar() {
             <Link href="/" className="flex items-center space-x-2">
               <Calendar className="h-6 w-6" />
               <span className="font-bold text-xl">MiTurno</span>
+              {userPlan === 'premium' && (
+                <Badge variant="default" className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none">
+                  Pro
+                </Badge>
+              )}
             </Link>
             <div className="flex items-center space-x-2">
               {user ? (
@@ -105,6 +111,11 @@ export function Navbar() {
             <Link href="/" className="flex items-center space-x-2">
               <Calendar className="h-6 w-6" />
               <span className="font-bold text-xl">MiTurno</span>
+              {userPlan === 'premium' && (
+                <Badge variant="default" className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none">
+                  Pro
+                </Badge>
+              )}
             </Link>
             <nav className="flex items-center space-x-6">
               {routes.map((route) => (

@@ -1,4 +1,4 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+      export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface Database {
   public: {
@@ -21,6 +21,7 @@ export interface Database {
           trial_end_date: string | null
           has_active_plan: boolean | null
           is_public: boolean | null
+          subscription_plan: string
         }
         Insert: {
           id?: string
@@ -39,6 +40,7 @@ export interface Database {
           trial_end_date?: string | null
           has_active_plan?: boolean | null
           is_public?: boolean | null
+          subscription_plan?: string
         }
         Update: {
           id?: string
@@ -57,6 +59,7 @@ export interface Database {
           trial_end_date?: string | null
           has_active_plan?: boolean | null
           is_public?: boolean | null
+          subscription_plan?: string
         }
       }
       services: {

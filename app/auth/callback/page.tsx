@@ -63,6 +63,7 @@ export default function AuthCallback() {
               full_name:
                 user.user_metadata.full_name || user.email?.split("@")[0] || "Usuario",
               profile_description: `Página de ${user.user_metadata.full_name || "Usuario"}`,
+              subscription_plan: 'free'
             })
 
             if (profileError) {
@@ -97,7 +98,7 @@ export default function AuthCallback() {
     }
 
     handleCallback()
-  }, [])
+  }, [router, supabase, toast])
 
   return (
     <div className="flex min-h-screen items-center justify-center">
