@@ -4,11 +4,11 @@ import { CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -168,7 +168,6 @@ export default function PaymentSuccessPage() {
             })
           }
         }, 2000)
-
       } catch (error) {
         console.error("Error checking subscription status:", error)
         toast({
@@ -210,5 +209,18 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        <p className="mt-4 text-gray-600">Cargando...</p>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 } 
