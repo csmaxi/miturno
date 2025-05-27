@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, AlertCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { UpgradeButton } from "@/app/components/upgrade-button"
 
 interface Service {
   id: string
@@ -34,7 +34,16 @@ interface Service {
 
 const PLANS = {
   free: { services: 3 },
-  premium: { services: Infinity }
+  premium: { services: Infinity },
+} as const
+
+type UserPlan = keyof typeof PLANS
+
+interface FormData {
+  name: string
+  description: string
+  duration: number
+  price: number
 }
 
 export default function ServicesPage() {
@@ -43,13 +52,19 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
     duration: 30,
     price: 0,
   })
-  const [userPlan, setUserPlan] = useState("free")
+  const [userPlan, setUserPlan] = useState<UserPlan>("free")
+
+  const supabase = createClientSupabaseClient()
+  const servicesList = useMemo(() => services || [], [services])
+  const maxServicesReached =
+    userPlan !== "premium" &&
+    servicesList.length >= PLANS[userPlan].services
 
   useEffect(() => {
     fetchServices()
@@ -57,58 +72,81 @@ export default function ServicesPage() {
   }, [])
 
   const fetchUserPlan = async () => {
-    const supabase = createClientSupabaseClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (session) {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("subscription_plan")
-        .eq("id", session.user.id)
-        .single()
-      
-      if (userData) {
-        setUserPlan(userData.subscription_plan)
-      }
-    }
-  }
-
-  const fetchServices = async () => {
-    const supabase = createClientSupabaseClient()
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (session) {
-      const { data, error } = await supabase
-        .from("services")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("name")
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los servicios",
-          variant: "destructive",
-        })
-      } else {
-        setServices(data || [])
-      }
-    }
-    setLoading(false)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = createClientSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session) return
 
-    // Verificar límite de servicios según el plan
-    if (services.length >= PLANS[userPlan as keyof typeof PLANS].services) {
+    try {
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("subscription_plan")
+        .eq("id", session.user.id)
+        .single()
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el plan de suscripción",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (userData) {
+        const plan = (userData.subscription_plan?.toLowerCase() || "free") as UserPlan
+        setUserPlan(plan)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al cargar el plan de suscripción",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchServices = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) return setLoading(false)
+
+    const { data, error } = await supabase
+      .from("services")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("name")
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los servicios",
+        variant: "destructive",
+      })
+    } else {
+      setServices(data || [])
+    }
+
+    setLoading(false)
+  }, [supabase, toast])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (maxServicesReached) {
       toast({
         title: "Límite alcanzado",
-        description: `Tu plan actual (${userPlan}) permite un máximo de ${PLANS[userPlan as keyof typeof PLANS].services} servicios. Actualiza tu plan para agregar más servicios.`,
+        description: "Has alcanzado el límite de servicios de tu plan actual. Actualizar a Premium",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "Debes iniciar sesión para agregar un servicio",
         variant: "destructive",
       })
       return
@@ -123,6 +161,7 @@ export default function ServicesPage() {
             description: formData.description,
             duration: formData.duration,
             price: formData.price,
+            updated_at: new Date().toISOString(),
           })
           .eq("id", editingService.id)
           .eq("user_id", session.user.id)
@@ -134,13 +173,15 @@ export default function ServicesPage() {
           description: "El servicio ha sido actualizado correctamente",
         })
       } else {
-        const { error } = await supabase.from("services").insert({
-          user_id: session.user.id,
-          name: formData.name,
-          description: formData.description,
-          duration: formData.duration,
-          price: formData.price,
-        })
+        const { error } = await supabase
+          .from("services")
+          .insert({
+            user_id: session.user.id,
+            name: formData.name,
+            description: formData.description,
+            duration: formData.duration,
+            price: formData.price,
+          })
 
         if (error) throw error
 
@@ -151,18 +192,13 @@ export default function ServicesPage() {
       }
 
       setIsDialogOpen(false)
+      setFormData({ name: "", description: "", duration: 30, price: 0 })
       setEditingService(null)
-      setFormData({
-        name: "",
-        description: "",
-        duration: 30,
-        price: 0,
-      })
       fetchServices()
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo guardar el servicio",
+        description: "No se pudo guardar el servicio",
         variant: "destructive",
       })
     }
@@ -180,7 +216,6 @@ export default function ServicesPage() {
   }
 
   const handleDelete = async (serviceId: string) => {
-    const supabase = createClientSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session) return
@@ -208,9 +243,7 @@ export default function ServicesPage() {
     }
   }
 
-  if (loading) {
-    return <div>Cargando...</div>
-  }
+  if (loading) return <div>Cargando...</div>
 
   return (
     <div className="container mx-auto py-8">
@@ -223,15 +256,12 @@ export default function ServicesPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingService(null)
-              setFormData({
-                name: "",
-                description: "",
-                duration: 30,
-                price: 0,
-              })
-            }}>
+            <Button
+              onClick={() => {
+                setEditingService(null)
+                setFormData({ name: "", description: "", duration: 30, price: 0 })
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Servicio
             </Button>
@@ -253,9 +283,7 @@ export default function ServicesPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                 />
               </div>
@@ -264,9 +292,7 @@ export default function ServicesPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -274,15 +300,10 @@ export default function ServicesPage() {
                 <Input
                   id="duration"
                   type="number"
-                  min="15"
-                  step="15"
+                  min={15}
+                  step={15}
                   value={formData.duration}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      duration: parseInt(e.target.value),
-                    })
-                  }
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
                   required
                 />
               </div>
@@ -291,15 +312,10 @@ export default function ServicesPage() {
                 <Input
                   id="price"
                   type="number"
-                  min="0"
-                  step="0.01"
+                  min={0}
+                  step={0.01}
                   value={formData.price}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      price: parseFloat(e.target.value),
-                    })
-                  }
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                   required
                 />
               </div>
@@ -313,23 +329,22 @@ export default function ServicesPage() {
         </Dialog>
       </div>
 
-      {services.length >= PLANS[userPlan as keyof typeof PLANS].services && (
+      {maxServicesReached && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Límite de servicios alcanzado</AlertTitle>
-          <AlertDescription>
-            Has alcanzado el límite de {PLANS[userPlan as keyof typeof PLANS].services} servicios para tu plan {userPlan}.
-            Actualiza tu plan para agregar más servicios.
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              Has alcanzado el límite de {PLANS[userPlan].services} servicios para tu plan actual.
+            </span>
+            <UpgradeButton variant="outline" className="ml-4" />
           </AlertDescription>
         </Alert>
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {services.map((service) => (
-          <div
-            key={service.id}
-            className="p-4 border rounded-lg space-y-2"
-          >
+          <div key={service.id} className="p-4 border rounded-lg space-y-2">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-semibold">{service.name}</h3>
@@ -338,35 +353,23 @@ export default function ServicesPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEdit(service)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(service.id)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(service.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
             {service.description && (
-              <p className="text-sm text-muted-foreground">
-                {service.description}
-              </p>
+              <p className="text-sm text-muted-foreground">{service.description}</p>
             )}
             {service.price > 0 && (
-              <p className="text-sm font-medium">
-                ${service.price.toFixed(2)}
-              </p>
+              <p className="text-sm font-medium">${service.price.toFixed(2)}</p>
             )}
           </div>
         ))}
       </div>
     </div>
   )
-} 
+}

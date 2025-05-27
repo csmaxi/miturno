@@ -33,13 +33,10 @@ DECLARE
     current_plan VARCHAR(20);
     current_limits JSONB;
 BEGIN
-    -- Get current plan
-    SELECT plan INTO current_plan
-    FROM subscriptions
-    WHERE user_id = NEW.user_id
-    AND status = 'active'
-    ORDER BY created_at DESC
-    LIMIT 1;
+    -- Get current plan from users table
+    SELECT subscription_plan INTO current_plan
+    FROM users
+    WHERE id = NEW.user_id;
 
     -- Set limits based on plan
     current_limits := CASE current_plan

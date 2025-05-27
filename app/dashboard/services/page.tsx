@@ -30,6 +30,7 @@ export default function ServicesPage() {
   const { user, loading: userLoading } = useUserContext()
   const [services, setServices] = useState<any[]>([])
   const [open, setOpen] = useState(false)
+  const [userPlan, setUserPlan] = useState<'free' | 'premium'>('free')
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -40,8 +41,28 @@ export default function ServicesPage() {
 
   const supabase = createClientSupabaseClient()
   const servicesList = useMemo(() => services || [], [services])
-  const maxServicesReached = servicesList.length >= 3
-  const hasReachedLimit = servicesList.length >= 3
+  const maxServicesReached = userPlan === 'free' && servicesList.length >= 3
+  const hasReachedLimit = userPlan === 'free' && servicesList.length >= 3
+
+  const fetchUserPlan = async () => {
+    if (!user) return
+    try {
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("subscription_plan")
+        .eq("id", user.id)
+        .single()
+      
+      if (error) {
+        console.error("Error fetching user plan:", error)
+        return
+      }
+      
+      setUserPlan(userData?.subscription_plan || 'free')
+    } catch (error) {
+      console.error("Error in fetchUserPlan:", error)
+    }
+  }
 
   const fetchServices = useCallback(async () => {
     if (!user) return []
@@ -62,6 +83,10 @@ export default function ServicesPage() {
     }
   }, [servicesData])
 
+  useEffect(() => {
+    fetchUserPlan()
+  }, [user])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -74,10 +99,10 @@ export default function ServicesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (services.length >= 3) {
+    if (userPlan === 'free' && services.length >= 3) {
       toast({
         title: "Límite alcanzado",
-        description: "Solo puedes crear hasta 3 servicios",
+        description: "Has alcanzado el límite de servicios de tu plan actual. Actualiza a Premium para crear más servicios.",
         variant: "destructive",
       })
       return
