@@ -12,13 +12,14 @@ const plans = [
     name: "Free",
     price: 0,
     features: [
-      "10 turnos (pendientes y confirmados)",
+      "15 turnos por mes",
       "3 servicios",
       "1 miembro del equipo",
       "Calendario básico",
       "Notificaciones por email",
       "Estadísticas básicas"
     ],
+<<<<<<< HEAD
     buttonText: "Plan actual",
     buttonVariant: "outline" as const,
     isCurrentPlan: true
@@ -26,6 +27,34 @@ const plans = [
   {
     name: "Premium",
     price: 999,
+=======
+    limits: {
+      appointments: 15,
+      services: 3,
+      teamMembers: 1
+    }
+  },
+  {
+    name: "Basic",
+    price: 9.99,
+    features: [
+      "30 turnos por mes",
+      "5 servicios",
+      "2 miembros del equipo",
+      "Notificaciones por WhatsApp",
+      "Calendario avanzado",
+      "Estadísticas básicas"
+    ],
+    limits: {
+      appointments: 30,
+      services: 5,
+      teamMembers: 2
+    }
+  },
+  {
+    name: "Pro",
+    price: 19.99,
+>>>>>>> parent of ccd6de1 (prueba1.0)
     features: [
       "Turnos ilimitados",
       "Servicios ilimitados",
@@ -52,61 +81,26 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
   const [loading, setLoading] = useState<string | null>(null)
 
   const handlePlanChange = async (plan: string) => {
-    if (plan === currentPlan) return
-
     setLoading(plan)
     try {
       const supabase = createClientSupabaseClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      
+      const { error } = await supabase
+        .from("users")
+        .update({ subscription_plan: plan })
+        .eq("id", userId)
 
-      if (!session) {
-        toast({
-          title: "Error",
-          description: "Debes iniciar sesión para cambiar de plan",
-          variant: "destructive",
-        })
-        return
-      }
+      if (error) throw error
 
-      if (plan === "free") {
-        // Actualizar a plan gratuito
-        const { error } = await supabase
-          .from("subscriptions")
-          .update({ plan: "free", status: "active" })
-          .eq("user_id", userId)
-
-        if (error) throw error
-
-        toast({
-          title: "Plan actualizado",
-          description: "Has cambiado al plan gratuito",
-        })
-        onPlanChange("free")
-      } else {
-        // Crear preferencia de pago en MercadoPago
-        const response = await fetch("/api/create-payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            plan: "premium",
-            price: 1,
-            userId: session.user.id,
-          }),
-        })
-
-        if (!response.ok) throw new Error("Error al crear el pago")
-
-        const { init_point } = await response.json()
-
-        // Redirigir a MercadoPago
-        window.location.href = init_point
-      }
+      onPlanChange(plan)
+      toast({
+        title: "Plan actualizado",
+        description: `Tu plan ha sido actualizado a ${plan}.`,
+      })
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo cambiar el plan",
+        description: error.message || "No se pudo actualizar el plan",
         variant: "destructive",
       })
     } finally {
@@ -115,13 +109,18 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
   }
 
   return (
+<<<<<<< HEAD
     <div className="grid gap-6 md:grid-cols-2">
       {plans.map((plan) => (
+=======
+    <div className="grid gap-6 md:grid-cols-3">
+      {PLANS.map((plan) => (
+>>>>>>> parent of ccd6de1 (prueba1.0)
         <Card key={plan.name} className={currentPlan === plan.name.toLowerCase() ? "border-primary" : ""}>
           <CardHeader>
             <CardTitle>{plan.name}</CardTitle>
             <CardDescription>
-              {plan.price === 0 ? "Gratis" : `$${plan.price.toLocaleString('es-AR')}`}
+              {plan.price === 0 ? "Gratis" : `$${plan.price}/mes`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -145,9 +144,7 @@ export function SubscriptionPlans({ userId, currentPlan, onPlanChange }: Subscri
                 ? "Actualizando..."
                 : currentPlan === plan.name.toLowerCase()
                 ? "Plan actual"
-                : plan.price === 0
-                ? "Cambiar a plan gratuito"
-                : "Actualizar a Premium"}
+                : "Cambiar plan"}
             </Button>
           </CardFooter>
         </Card>

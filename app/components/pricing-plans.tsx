@@ -168,8 +168,8 @@ export function PricingPlans() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          plan: "premium",
-          price: 1,
+          plan,
+          price,
           userId: session.user.id,
         }),
       })
@@ -194,97 +194,25 @@ export function PricingPlans() {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Plan Gratuito</CardTitle>
-          <CardDescription>Perfecto para comenzar</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">$0</div>
-          <ul className="mt-4 space-y-2">
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>10 turnos (pendientes y confirmados)</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>3 servicios</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>1 miembro del equipo</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Notificaciones por WhatsApp</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Calendario básico</span>
-            </li>
-          </ul>
-        </CardContent>
-        <CardFooter>
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => handleSubscribe("free", 0)}
-            disabled={loading === "free"}
-          >
-            {loading === "free" ? "Procesando..." : "Plan actual"}
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card className="border-primary">
-        <CardHeader>
-          <CardTitle>Plan Premium</CardTitle>
-          <CardDescription>Acceso ilimitado</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">$1</div>
-          <ul className="mt-4 space-y-2">
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Turnos ilimitados</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Servicios ilimitados</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Miembros del equipo ilimitados</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Notificaciones por WhatsApp</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Calendario premium</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Estadísticas avanzadas</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
-              <span>Soporte prioritario</span>
-            </li>
-          </ul>
-        </CardContent>
-        <CardFooter>
-          <Button
-            className="w-full"
-            onClick={() => handleSubscribe("premium", 1)}
-            disabled={loading === "premium"}
-          >
-            {loading === "premium" ? "Procesando..." : "Actualizar a Premium"}
-          </Button>
-        </CardFooter>
-      </Card>
+    <div 
+      className="grid gap-8 md:grid-cols-3 mt-4"
+      role="region"
+      aria-label="Planes de suscripción"
+    >
+      <Suspense fallback={
+        <div className="col-span-3 flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }>
+        {PLANS.map((plan) => (
+          <PlanCard
+            key={plan.name}
+            plan={plan}
+            onSubscribe={handleSubscribe}
+            loading={loading}
+          />
+        ))}
+      </Suspense>
     </div>
   )
 } 

@@ -46,7 +46,16 @@ export async function PUT(request: Request) {
           // Verificar si la suscripción ya existe
           const { data: existingSubscription } = await supabase
             .from("subscriptions")
+<<<<<<< HEAD
             .select("*")
+=======
+            .update({
+              status: "active",
+              current_period_start: new Date().toISOString(),
+              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            })
+            .eq("user_id", userId)
+>>>>>>> parent of ccd6de1 (prueba1.0)
             .eq("mercadopago_subscription_id", paymentId)
             .single()
 
@@ -139,7 +148,16 @@ async function handleMerchantOrder(orderId: string | null) {
       // Verificar si la suscripción ya existe
       const { data: existingSubscription } = await supabase
         .from("subscriptions")
+<<<<<<< HEAD
         .select("*")
+=======
+        .update({
+          status: "active",
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq("user_id", userId)
+>>>>>>> parent of ccd6de1 (prueba1.0)
         .eq("mercadopago_subscription_id", paymentId)
         .single()
 

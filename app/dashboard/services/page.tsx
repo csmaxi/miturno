@@ -22,8 +22,6 @@ import {
 } from "@/components/ui/dialog"
 import { useCachedFetch } from "@/lib/hooks/useCachedFetch"
 import { useUserContext } from "@/lib/context/UserContext"
-import { UpgradeButton } from "@/app/components/upgrade-button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ServicesPage() {
   const { toast } = useToast()
@@ -41,6 +39,7 @@ export default function ServicesPage() {
 
   const supabase = createClientSupabaseClient()
   const servicesList = useMemo(() => services || [], [services])
+<<<<<<< HEAD
   const maxServicesReached = userPlan === 'free' && servicesList.length >= 3
   const hasReachedLimit = userPlan === 'free' && servicesList.length >= 3
 
@@ -63,6 +62,9 @@ export default function ServicesPage() {
       console.error("Error in fetchUserPlan:", error)
     }
   }
+=======
+  const maxServicesReached = servicesList.length >= 3
+>>>>>>> parent of ccd6de1 (prueba1.0)
 
   const fetchServices = useCallback(async () => {
     if (!user) return []
@@ -260,16 +262,6 @@ export default function ServicesPage() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {hasReachedLimit && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTitle>Límite alcanzado</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>Has alcanzado el límite de servicios de tu plan actual.</span>
-            <UpgradeButton variant="outline" className="ml-4" />
-          </AlertDescription>
-        </Alert>
-      )}
 
       {loading ? loadingSkeleton : servicesList.length === 0 ? (
         <Card>

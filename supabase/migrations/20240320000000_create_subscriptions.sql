@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     mercadopago_subscription_id VARCHAR(255),
     current_period_start TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    current_period_end TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '1 year'),
+    current_period_end TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '1 month'),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -40,9 +40,15 @@ BEGIN
 
     -- Set limits based on plan
     current_limits := CASE current_plan
+<<<<<<< HEAD
         WHEN 'free' THEN '{"appointments": 10, "services": 3, "team_members": 1}'::JSONB
         WHEN 'premium' THEN '{"appointments": null, "services": 999999, "team_members": 999999}'::JSONB
         ELSE '{"appointments": 10, "services": 3, "team_members": 1}'::JSONB
+=======
+        WHEN 'free' THEN '{"appointments": 15, "services": 3, "team_members": 1}'::JSONB
+        WHEN 'basic' THEN '{"appointments": 30, "services": 5, "team_members": 3}'::JSONB
+        ELSE '{"appointments": null, "services": null, "team_members": null}'::JSONB
+>>>>>>> parent of ccd6de1 (prueba1.0)
     END;
 
     -- Check appointments limit
@@ -50,9 +56,9 @@ BEGIN
         SELECT COUNT(*) 
         FROM appointments 
         WHERE user_id = NEW.user_id 
-        AND status IN ('pending', 'confirmed')
+        AND created_at >= date_trunc('month', NOW())
     ) >= current_limits->>'appointments' THEN
-        RAISE EXCEPTION 'Límite de turnos alcanzado para el plan gratuito';
+        RAISE EXCEPTION 'Límite de turnos mensuales alcanzado para el plan gratuito';
     END IF;
 
     -- Check services limit

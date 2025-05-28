@@ -11,27 +11,27 @@ export const metadata: Metadata = {
 const faqs = [
   {
     question: "¿Cómo funciona el sistema de precios?",
-    answer: "Ofrecemos dos planes: Free y Premium. El plan Free es gratuito y te permite gestionar hasta 10 turnos (pendientes y confirmados), 3 servicios y 1 miembro del equipo. El plan Premium por $1 te da acceso ilimitado a turnos, servicios y miembros del equipo."
+    answer: "Ofrecemos tres planes: Free, Basic y Pro. El plan Free es gratuito y te permite gestionar hasta 15 turnos por mes. El plan Basic incluye 30 turnos y más funcionalidades. El plan Pro ofrece turnos ilimitados y todas las características premium."
   },
   {
     question: "¿Puedo cambiar de plan en cualquier momento?",
-    answer: "Sí, puedes cambiar de plan en cualquier momento. Si cambias al plan gratuito, mantendrás tus datos pero con las limitaciones del plan. Si actualizas al plan Premium, tendrás acceso inmediato a todas las funcionalidades ilimitadas."
+    answer: "Sí, puedes cambiar de plan en cualquier momento. Los cambios se aplicarán inmediatamente y se ajustará el precio proporcionalmente."
   },
   {
     question: "¿Qué métodos de pago aceptan?",
     answer: "Aceptamos todas las tarjetas de crédito y débito a través de MercadoPago, así como transferencias bancarias y billeteras virtuales."
   },
   {
-    question: "¿Qué sucede si excedo los límites del plan gratuito?",
-    answer: "Si excedes los límites del plan gratuito, podrás seguir utilizando las funcionalidades básicas hasta el límite establecido. Te notificaremos cuando te acerques al límite para que puedas considerar actualizar al plan Premium."
+    question: "¿Hay un período de prueba?",
+    answer: "Sí, ofrecemos un período de prueba de 14 días en el plan Basic y Pro para que puedas probar todas las funcionalidades antes de comprometerte."
   },
   {
-    question: "¿Puedo cancelar mi suscripción Premium?",
-    answer: "Sí, puedes cancelar tu suscripción Premium en cualquier momento. Al cancelar, volverás automáticamente al plan gratuito con sus respectivas limitaciones."
+    question: "¿Qué sucede si excedo los límites de mi plan?",
+    answer: "Si excedes los límites de tu plan actual, podrás seguir utilizando las funcionalidades básicas. Te notificaremos cuando te acerques al límite para que puedas considerar actualizar tu plan."
   },
   {
-    question: "¿El pago del plan Premium es único o recurrente?",
-    answer: "El pago del plan Premium es único por $1. No hay pagos recurrentes ni suscripciones mensuales."
+    question: "¿Puedo cancelar mi suscripción?",
+    answer: "Sí, puedes cancelar tu suscripción en cualquier momento. No hay penalizaciones por cancelación y podrás seguir utilizando tu plan hasta el final del período pagado."
   }
 ]
 

@@ -7,7 +7,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+<<<<<<< HEAD
 import { Users, Plus, Trash } from "lucide-react"
+=======
+import { Plus, Trash, Users, Instagram, Upload } from "lucide-react"
+>>>>>>> parent of ccd6de1 (prueba1.0)
 import {
   Dialog,
   DialogContent,
@@ -17,9 +21,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+<<<<<<< HEAD
 import { useUserContext } from "@/lib/context/UserContext"
 import { UpgradeButton } from "@/app/components/upgrade-button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+=======
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from 'next/image'
+>>>>>>> parent of ccd6de1 (prueba1.0)
 
 const PLANS = {
   free: { teamMembers: 1 },
@@ -38,6 +47,10 @@ export default function TeamPage() {
     instagram: "",
     image_url: "",
   })
+<<<<<<< HEAD
+=======
+  const [uploadingImage, setUploadingImage] = useState(false)
+>>>>>>> parent of ccd6de1 (prueba1.0)
 
   const supabase = createClientSupabaseClient()
   const teamList = useMemo(() => teamMembers || [], [teamMembers])
@@ -56,6 +69,10 @@ export default function TeamPage() {
 
         if (error) throw error
         setTeamMembers(data || [])
+<<<<<<< HEAD
+=======
+      }
+>>>>>>> parent of ccd6de1 (prueba1.0)
     } catch (error: any) {
       toast({
         title: "Error",
@@ -228,6 +245,7 @@ export default function TeamPage() {
         </Dialog>
       </div>
 
+<<<<<<< HEAD
       {hasReachedLimit && userPlan !== 'premium' && (
         <Alert variant="destructive" className="mb-4">
           <AlertTitle>Límite alcanzado</AlertTitle>
@@ -239,6 +257,13 @@ export default function TeamPage() {
       )}
 
       {loading ? loadingSkeleton : teamList.length === 0 ? (
+=======
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        </div>
+      ) : teamMembers.length === 0 ? (
+>>>>>>> parent of ccd6de1 (prueba1.0)
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Users className="h-10 w-10 text-muted-foreground mb-4" />
