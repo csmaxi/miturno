@@ -5,7 +5,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Calendar, Check, X, Info } from "lucide-react"
+import { Calendar, Check, X, MessageSquare, Info } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -30,7 +30,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
-  const { user, userPlan } = useUserContext()
+  const { user } = useUserContext()
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [notes, setNotes] = useState("")
@@ -55,8 +55,10 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     if (!user) return
-    const supabase = createClientSupabaseClient()
 
+    const supabase = createClientSupabaseClient()
+    
+    // Cargar datos iniciales
     fetchAppointments()
       .then(data => {
         setAppointments(data)
@@ -67,17 +69,23 @@ export default function AppointmentsPage() {
         setLoading(false)
       })
 
+    // Configurar suscripción en tiempo real
     const subscription = supabase
-      .channel("appointments_changes")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "appointments",
-        filter: `user_id=eq.${user.id}`,
-      }, async () => {
-        const newData = await fetchAppointments()
-        setAppointments(newData)
-      })
+      .channel('appointments_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `user_id=eq.${user.id}`
+        },
+        async () => {
+          // Cuando hay cambios, actualizar los datos
+          const newData = await fetchAppointments()
+          setAppointments(newData)
+        }
+      )
       .subscribe()
 
     return () => {
@@ -98,21 +106,25 @@ export default function AppointmentsPage() {
       })
   }, [fetchAppointments])
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const handleStatusChange = useCallback(async (id: string, status: string) => {
     setProcessingAction(true)
     try {
-      const supabase = createClientSupabaseClient()
-      const { data: appointmentData } = await supabase
+      const { data: appointmentData, error: fetchError } = await createClientSupabaseClient()
         .from("appointments")
-        .select(`*, services:service_id (name)`)
+        .select(`
+          *,
+          services:service_id (name)
+        `)
         .eq("id", id)
         .single()
 
-      const { error } = await supabase.from("appointments").update({ status }).eq("id", id)
+      if (fetchError) throw fetchError
+
+      const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", id)
       if (error) throw error
 
-      if (appointmentData?.client_phone && ["confirmed", "cancelled"].includes(status)) {
-        const message = status === "confirmed"
+      if (appointmentData && appointmentData.client_phone && (status === "confirmed" || status === "cancelled")) {
+        let message = status === "confirmed"
           ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, user)
           : formatAppointmentCancellationForClient(appointmentData, appointmentData.services, user)
 
@@ -124,10 +136,13 @@ export default function AppointmentsPage() {
 
       toast({
         title: "Estado actualizado",
-        description: `El turno ha sido ${status}`,
+        description: `El turno ha sido ${status === "confirmed" ? "confirmado" : status === "completed" ? "completado" : "cancelado"} exitosamente`,
       })
 
-      setActiveTab(status)
+      if (status === "confirmed") setActiveTab("confirmed")
+      else if (status === "cancelled") setActiveTab("cancelled")
+      else if (status === "completed") setActiveTab("completed")
+
       refetch()
     } catch (error: any) {
       toast({
@@ -138,22 +153,29 @@ export default function AppointmentsPage() {
     } finally {
       setProcessingAction(false)
     }
-  }
+  }, [toast, user, refetch])
 
   const handleAddNotes = async () => {
     if (!selectedAppointment) return
+
     try {
-      const { error } = await createClientSupabaseClient()
-        .from("appointments")
-        .update({ notes })
-        .eq("id", selectedAppointment.id)
+      const { error } = await createClientSupabaseClient().from("appointments").update({ notes }).eq("id", selectedAppointment.id)
 
       if (error) throw error
-      toast({ title: "Notas actualizadas" })
+
+      toast({
+        title: "Notas actualizadas",
+        description: "Las notas han sido actualizadas exitosamente",
+      })
+
       setOpenDialog(false)
       refetch()
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron actualizar las notas",
+        variant: "destructive",
+      })
     }
   }
 
@@ -178,31 +200,64 @@ export default function AppointmentsPage() {
     }
   }
 
-  const pendingAppointments = useMemo(() =>
-    appointments.filter(a => a.status === "pending"), [appointments])
+  const handleWhatsAppAction = useCallback(async (appointment: any, type: "confirm" | "cancel") => {
+    setProcessingAction(true)
+    try {
+      const status = type === "confirm" ? "confirmed" : "cancelled"
 
-  const confirmedAppointments = useMemo(() =>
-    appointments.filter(a => a.status === "confirmed"), [appointments])
+      const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", appointment.id)
+      if (error) throw error
 
-  const completedAppointments = useMemo(() =>
-    appointments.filter(a => a.status === "completed"), [appointments])
+      const message = type === "confirm"
+        ? formatAppointmentConfirmationForClient(appointment, appointment.services || {}, user)
+        : formatAppointmentCancellationForClient(appointment, appointment.services || {}, user)
 
-  const cancelledAppointments = useMemo(() =>
-    appointments.filter(a => a.status === "cancelled"), [appointments])
+      const whatsappLink = generateWhatsAppLink(appointment.client_phone, message)
+      window.open(whatsappLink, "_blank")
 
-  const hasReachedAppointmentLimit = userPlan !== 'premium' && (pendingAppointments.length + confirmedAppointments.length) >= 10
+      setActiveTab(status)
+
+      toast({
+        title: "Estado actualizado",
+        description: `El turno ha sido ${type === "confirm" ? "confirmado" : "cancelado"} exitosamente`,
+      })
+
+      refetch()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo completar la acción",
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingAction(false)
+    }
+  }, [toast, user, refetch])
+
+  // Memoizar los filtros de citas
+  const filteredAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === activeTab),
+    [appointments, activeTab]
+  )
+
+  const pendingAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "pending"),
+    [appointments]
+  )
+
+  const confirmedAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "confirmed"),
+    [appointments]
+  )
+
+  const hasReachedAppointmentLimit = (pendingAppointments.length + confirmedAppointments.length) >= 10
 
   const visiblePendingAppointments = useMemo(() => {
-    if (userPlan === 'premium') return pendingAppointments
     const allowed = Math.max(0, 10 - confirmedAppointments.length)
-    // Sort appointments by created_at in ascending order (oldest first)
-    const sortedPending = [...pendingAppointments].sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-    return sortedPending.slice(0, allowed)
-  }, [pendingAppointments, confirmedAppointments, userPlan])
+    return pendingAppointments.slice(0, allowed)
+  }, [pendingAppointments, confirmedAppointments])
 
-  const hiddenPendingCount = userPlan === 'premium' ? 0 : pendingAppointments.length - visiblePendingAppointments.length
+  const hiddenPendingCount = pendingAppointments.length - visiblePendingAppointments.length
 
   const renderAppointmentList = (appointmentList: any[]) => {
     if (appointmentList.length === 0) {
@@ -330,15 +385,6 @@ export default function AppointmentsPage() {
           <Info className="h-4 w-4" />
           <AlertDescription>
             Has alcanzado el límite de 10 turnos (pendientes + confirmados). Los turnos adicionales no podrán ser confirmados hasta que se libere espacio.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {hiddenPendingCount > 0 && (
-        <Alert variant="default" className="bg-orange-50 dark:bg-orange-900/50">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Hay {hiddenPendingCount} turno(s) pendiente(s) oculto(s) por el límite de 10 turnos activos.
           </AlertDescription>
         </Alert>
       )}
