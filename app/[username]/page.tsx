@@ -1,4 +1,7 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+"use client"
+
+import { useState, useEffect } from "react";
+import { createClientSupabaseClient } from "@/lib/supabase/client";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,57 +51,89 @@ const AppointmentForm = dynamic<AppointmentFormProps>(() =>
   ssr: false
 });
 
-export default async function UserProfilePage({
+export default function UserProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const { username } = await params;
-  const supabase = createServerSupabaseClient();
+  const [userData, setUserData] = useState<any>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [availability, setAvailability] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  // Obtener datos del usuario por username
-  const { data: userData, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("username", username)
-    .single();
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const { username } = await params;
+        const supabase = createClientSupabaseClient();
+
+        // Obtener datos del usuario por username
+        const { data: user, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("username", username)
+          .single();
+
+        if (userError || !user) {
+          setError(true);
+          return;
+        }
+
+        setUserData(user);
+
+        // Obtener todos los datos en paralelo
+        const [
+          { data: servicesData },
+          { data: teamMembersData },
+          { data: availabilityData }
+        ] = await Promise.all([
+          supabase
+            .from("services")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("team_members")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("availability")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("day_of_week", { ascending: true })
+        ]);
+
+        setServices(servicesData || []);
+        setTeamMembers(teamMembersData || []);
+        setAvailability(availabilityData || []);
+        setLoading(false);
+      } catch (err) {
+        setError(true);
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [params]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        </main>
+      </div>
+    );
+  }
 
   if (error || !userData) {
     notFound();
   }
-
-  // Obtener todos los datos en paralelo
-  const [
-    { data: services },
-    { data: teamMembers },
-    { data: availability }
-  ] = await Promise.all([
-    supabase
-      .from("services")
-      .select("*")
-      .eq("user_id", userData.id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("team_members")
-      .select("*")
-      .eq("user_id", userData.id)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("availability")
-      .select("*")
-      .eq("user_id", userData.id)
-      .order("day_of_week", { ascending: true })
-  ]);
-
-  // Obtener usuario autenticado de forma segura
-  const { data: { user: currentUser } } = await supabase.auth.getUser();
-  const isOwner = currentUser?.id === userData.id;
-
-  // Asegurarse de que los datos estén definidos antes de pasarlos
-  const safeServices = services || [];
-  const safeTeamMembers = teamMembers || [];
-  const safeAvailability = availability || [];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -151,7 +186,7 @@ export default async function UserProfilePage({
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3">
-                    {safeServices.map((service) => (
+                    {services.map((service) => (
                       <div
                         key={service.id}
                         className="p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md border-border hover:border-primary/50"
@@ -213,14 +248,14 @@ export default async function UserProfilePage({
               </Card>
 
               {/* Team Members */}
-              {safeTeamMembers.length > 0 && (
+              {teamMembers.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Nuestro Equipo</CardTitle>
                     <CardDescription>Conoce a nuestros profesionales</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-4">
-                    {safeTeamMembers.map((member) => (
+                    {teamMembers.map((member) => (
                       <div key={member.id} className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
                           {member.image_url ? (
@@ -262,9 +297,9 @@ export default async function UserProfilePage({
               <Suspense fallback={<AppointmentFormLoader />}>
                 <AppointmentForm
                   userId={userData.id}
-                  services={safeServices}
-                  teamMembers={safeTeamMembers}
-                  availability={safeAvailability}
+                  services={services}
+                  teamMembers={teamMembers}
+                  availability={availability}
                 />
               </Suspense>
             </div>
