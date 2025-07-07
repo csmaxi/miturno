@@ -140,11 +140,11 @@ export default function UserProfilePage({
       <Navbar />
       <main className="flex-1">
         {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm border-b">
-          <div className="container mx-auto px-4 py-6">
+        <header className="bg-gradient-to-r from-slate-50 to-slate-100/50 backdrop-blur-sm border-b">
+          <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
+              <div className="flex items-center gap-6">
+                <Avatar className="h-20 w-20 ring-4 ring-white shadow-lg">
                   {userData.profile_image_url ? (
                     <OptimizedImage
                       src={userData.profile_image_url}
@@ -152,16 +152,22 @@ export default function UserProfilePage({
                       className="object-cover"
                     />
                   ) : (
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback className="text-3xl font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
                       {userData.full_name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <div>
-                  <h1 className="text-2xl font-bold">{userData.full_name}</h1>
-                  <p className="text-muted-foreground">@{userData.username}</p>
+                <div className="text-center sm:text-left">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                    {userData.full_name}
+                  </h1>
+                  <p className="text-lg text-muted-foreground font-medium mt-1">@{userData.username}</p>
                   {userData.profile_description && (
-                    <p className="text-sm text-muted-foreground mt-1">{userData.profile_description}</p>
+                    <div className="mt-3">
+                      <p className="text-base text-slate-600 leading-relaxed max-w-md">
+                        {userData.profile_description}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
