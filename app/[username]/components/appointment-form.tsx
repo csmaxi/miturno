@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,13 +11,11 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { CalendarIcon, ChevronDown, ChevronUp, Calendar as CalendarIcon2 } from "lucide-react"
+import { CalendarIcon, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { generateWhatsAppLink, formatAppointmentNotificationForOwner } from "@/lib/whatsapp-direct-service"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Info } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   AlertDialog,
@@ -51,6 +49,7 @@ interface AppointmentFormProps {
 
 export function AppointmentForm({ userId, services, teamMembers, availability }: AppointmentFormProps) {
   const { toast } = useToast()
+  const [selectedService, setSelectedService] = useState<any>(null)
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
   const [formData, setFormData] = useState({
@@ -58,15 +57,29 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
     email: "",
     phone: "",
     displayPhone: "",
-    serviceId: "",
     teamMemberId: "",
     time: "",
     notes: "",
   })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [ownerData, setOwnerData] = useState<any>(null)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+
+  // Escuchar el evento de selección de servicio
+  useEffect(() => {
+    const handleServiceSelected = (event: CustomEvent) => {
+      setSelectedService(event.detail.service)
+      // Resetear fecha y hora cuando se selecciona un nuevo servicio
+      setDate(undefined)
+      setFormData(prev => ({ ...prev, time: "" }))
+    }
+
+    window.addEventListener('serviceSelected', handleServiceSelected as EventListener)
+    
+    return () => {
+      window.removeEventListener('serviceSelected', handleServiceSelected as EventListener)
+    }
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -103,15 +116,14 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
   // Generar horarios disponibles basados en la disponibilidad
   const getAvailableTimes = () => {
-    if (!date) return []
+    if (!date || !selectedService) return []
 
     const dayOfWeek = date.getDay() // 0 = domingo, 1 = lunes, etc.
     const availableDay = availability.find((a) => a.day_of_week === dayOfWeek)
 
     if (!availableDay) return []
 
-    const selectedService = services.find((s) => s.id === formData.serviceId)
-    const serviceDuration = selectedService ? selectedService.duration : 30
+    const serviceDuration = selectedService.duration
 
     // Asegurarse de que start_time y end_time existan
     if (!availableDay.start_time || !availableDay.end_time) return []
@@ -135,6 +147,15 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!selectedService) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un servicio",
+        variant: "destructive",
+      })
+      return
+    }
+
     // Validar que el número de teléfono tenga el formato correcto
     const phoneNumber = formData.displayPhone.trim()
     if (!phoneNumber || phoneNumber.length < 8) {
@@ -146,11 +167,10 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       return
     }
 
-    if (!date || !formData.time || !formData.serviceId) {
+    if (!date || !formData.time) {
       toast({
         title: "Error",
-        description:
-          "Por favor completa todos los campos requeridos.",
+        description: "Por favor completa todos los campos requeridos.",
         variant: "destructive",
       })
       return
@@ -193,8 +213,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
           .single()
       ])
 
-      const selectedService = services.find((s) => s.id === formData.serviceId)
-      const serviceDuration = selectedService ? selectedService.duration : 30
+      const serviceDuration = selectedService.duration
 
       // Calcular hora de fin
       const [hours, minutes] = formData.time.split(":").map(Number)
@@ -213,7 +232,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
         .from("appointments")
         .insert({
           user_id: userId,
-          service_id: formData.serviceId,
+          service_id: selectedService.id,
           team_member_id: formData.teamMemberId || null,
           client_name: formData.name,
           client_email: formData.email,
@@ -235,17 +254,17 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
       setShowSuccessDialog(true)
 
       // Resetear formulario
+      setSelectedService(null)
+      setDate(undefined)
       setFormData({
         name: "",
         email: "",
         phone: "",
         displayPhone: "",
-        serviceId: "",
         teamMemberId: "",
         time: "",
         notes: "",
       })
-      setDate(undefined)
     } catch (error: any) {
       toast({
         title: "Error",
@@ -298,148 +317,22 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon2 className="h-5 w-5 text-primary" />
-              Reservar turno
-            </CardTitle>
-            <CardDescription>Completa el formulario para reservar tu turno</CardDescription>
+            <CardTitle>Reservar Cita</CardTitle>
+            <CardDescription>Completa los datos para confirmar tu reserva</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre completo</Label>
-                <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Service selection will be handled in the parent component */}
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Selecciona un servicio en la columna izquierda</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Seleccionar país" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SOUTH_AMERICAN_COUNTRIES.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          {country.name} ({country.prefix})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.displayPhone}
-                    onChange={handleChange}
-                    placeholder="Ej: 9112345678"
-                    required
-                    className="flex-1"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ingresa tu número sin espacios ni guiones. Ejemplo: 9112345678
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="service">Servicio</Label>
-                <Select value={formData.serviceId} onValueChange={(value) => handleSelectChange("serviceId", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un servicio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.name} ({service.duration} min)
-                        {service.price ? ` - ${service.price.toFixed(2)}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {teamMembers.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="teamMember">Profesional (opcional)</Label>
-                  <Select value={formData.teamMemberId} onValueChange={(value) => handleSelectChange("teamMemberId", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un profesional" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teamMembers.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label>Fecha</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP", { locale: es }) : "Selecciona una fecha"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      initialFocus
-                      disabled={(date) => {
-                        const dayOfWeek = date.getDay()
-                        return date < new Date() || !availability.some((a) => a.day_of_week === dayOfWeek)
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {date && availableTimes.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="time">Horario</Label>
-                  <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un horario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTimes.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas adicionales (opcional)</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  placeholder="Información adicional que quieras compartir"
-                  value={formData.notes}
-                  onChange={handleChange}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Reservando..." : "Reservar turno"}
+              
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={true}
+              >
+                Selecciona un servicio primero
               </Button>
             </form>
           </CardContent>
@@ -451,32 +344,87 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon2 className="h-5 w-5 text-primary" />
-          Reservar turno
-        </CardTitle>
-        <CardDescription>Completa el formulario para reservar tu turno</CardDescription>
+        <CardTitle>Reservar Cita</CardTitle>
+        <CardDescription>Completa los datos para confirmar tu reserva</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre completo</Label>
-            <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {selectedService && (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-primary" />
+                <span className="font-medium">{selectedService.name}</span>
+              </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {selectedService.duration} minutos
+                </div>
+                {selectedService.price && <span>${selectedService.price.toLocaleString()}</span>}
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Fecha *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                    disabled={!selectedService}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP", { locale: es }) : "Selecciona una fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                    disabled={(date) => {
+                      const dayOfWeek = date.getDay()
+                      return date < new Date() || !availability.some((a) => a.day_of_week === dayOfWeek)
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time">Hora *</Label>
+              <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
+                <SelectTrigger disabled={!date || availableTimes.length === 0}>
+                  <SelectValue placeholder="Seleccionar hora" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTimes.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="name">Nombre completo *</Label>
             <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="tu@email.com"
-              value={formData.email}
+              id="name"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
+              placeholder="Tu nombre completo"
               required
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="phone">WhatsApp (obligatorio para notificaciones)</Label>
+            <Label htmlFor="phone">Teléfono *</Label>
             <div className="flex flex-col sm:flex-row gap-2">
               <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
                 <SelectTrigger className="w-[180px]">
@@ -505,22 +453,19 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
               Ingresa tu número sin espacios ni guiones. Ejemplo: 9112345678
             </p>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="service">Servicio</Label>
-            <Select value={formData.serviceId} onValueChange={(value) => handleSelectChange("serviceId", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un servicio" />
-              </SelectTrigger>
-              <SelectContent>
-                {services.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
-                    {service.name} ({service.duration} min)
-                    {service.price ? ` - ${service.price.toFixed(2)}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="email">Email (opcional)</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="tu@email.com"
+            />
           </div>
+
           {teamMembers.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="teamMember">Profesional (opcional)</Label>
@@ -538,61 +483,32 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
               </Select>
             </div>
           )}
+
           <div className="space-y-2">
-            <Label>Fecha</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP", { locale: es }) : "Selecciona una fecha"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                  disabled={(date) => {
-                    const dayOfWeek = date.getDay()
-                    return date < new Date() || !availability.some((a) => a.day_of_week === dayOfWeek)
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          {date && availableTimes.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="time">Horario</Label>
-              <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un horario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTimes.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+            <Label htmlFor="notes">Notas adicionales</Label>
             <Textarea
               id="notes"
               name="notes"
-              placeholder="Información adicional que quieras compartir"
               value={formData.notes}
               onChange={handleChange}
+              placeholder="Alguna información adicional..."
+              rows={3}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Reservando..." : "Reservar turno"}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={
+              !selectedService ||
+              !date ||
+              !formData.time ||
+              !formData.name ||
+              !formData.displayPhone ||
+              loading
+            }
+          >
+            {loading ? "Reservando..." : "Confirmar Reserva"}
           </Button>
         </form>
       </CardContent>
