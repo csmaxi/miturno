@@ -195,6 +195,17 @@ export default function UserProfilePage({
                           window.dispatchEvent(new CustomEvent('serviceSelected', { 
                             detail: { service } 
                           }))
+                          
+                          // Scroll to booking form on mobile
+                          if (window.innerWidth < 1024) { // lg breakpoint
+                            const bookingForm = document.getElementById('booking-form')
+                            if (bookingForm) {
+                              bookingForm.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'start' 
+                              })
+                            }
+                          }
                         }}
                       >
                         <div className="flex items-center justify-between">
@@ -300,7 +311,7 @@ export default function UserProfilePage({
             </div>
 
             {/* Booking Form */}
-            <div>
+            <div id="booking-form">
               <Suspense fallback={<AppointmentFormLoader />}>
                 <AppointmentForm
                   userId={userData.id}
