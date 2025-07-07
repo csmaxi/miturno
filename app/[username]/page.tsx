@@ -142,7 +142,7 @@ export default function UserProfilePage({
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-sm border-b">
           <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-center">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   {userData.profile_image_url ? (
@@ -165,12 +165,6 @@ export default function UserProfilePage({
                   )}
                 </div>
               </div>
-              <Button variant="outline" asChild>
-                <Link href="/">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Volver
-                </Link>
-              </Button>
             </div>
           </div>
         </header>

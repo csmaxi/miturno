@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Calendar, Menu, Settings } from "lucide-react"
+import { Calendar, Menu, Settings, Edit } from "lucide-react"
 import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -20,6 +20,9 @@ export function Navbar() {
   const supabase = useMemo(() => createClientSupabaseClient(), [])
   const { setUser, setUserData } = useAuthStore()
   const { user, loading, userPlan } = useUserContext()
+
+  // Check if user is on their own profile page
+  const isOwnProfile = user && pathname.startsWith(`/${user.username}`)
 
   const handleSignOut = async () => {
     try {
@@ -77,6 +80,14 @@ export function Navbar() {
               )}
             </Link>
             <div className="flex items-center space-x-2">
+              {isOwnProfile && (
+                <Button variant="outline" asChild size="sm">
+                  <Link href="/dashboard/settings">
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Link>
+                </Button>
+              )}
               {user ? (
                 <Button variant="outline" onClick={handleSignOut} className="inline-flex">
                   Cerrar sesión
@@ -133,6 +144,14 @@ export function Navbar() {
             </nav>
           </div>
           <div className="flex items-center space-x-4">
+            {isOwnProfile && (
+              <Button variant="outline" asChild>
+                <Link href="/dashboard/settings">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar perfil
+                </Link>
+              </Button>
+            )}
             {user ? (
               <Button variant="outline" onClick={handleSignOut} className="inline-flex">
                 Cerrar sesión
