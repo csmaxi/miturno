@@ -7,11 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-<<<<<<< HEAD
 import { Users, Plus, Trash } from "lucide-react"
-=======
-import { Plus, Trash, Users, Instagram, Upload } from "lucide-react"
->>>>>>> parent of ccd6de1 (prueba1.0)
 import {
   Dialog,
   DialogContent,
@@ -21,23 +17,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-<<<<<<< HEAD
 import { useUserContext } from "@/lib/context/UserContext"
-import { UpgradeButton } from "@/app/components/upgrade-button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-=======
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Image from 'next/image'
->>>>>>> parent of ccd6de1 (prueba1.0)
-
-const PLANS = {
-  free: { teamMembers: 1 },
-  premium: { teamMembers: Infinity }
-}
 
 export default function TeamPage() {
   const { toast } = useToast()
-  const { user, loading: userLoading, userPlan, refetchUserPlan } = useUserContext()
+  const { user, loading: userLoading } = useUserContext()
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -47,15 +31,9 @@ export default function TeamPage() {
     instagram: "",
     image_url: "",
   })
-<<<<<<< HEAD
-=======
-  const [uploadingImage, setUploadingImage] = useState(false)
->>>>>>> parent of ccd6de1 (prueba1.0)
 
   const supabase = createClientSupabaseClient()
   const teamList = useMemo(() => teamMembers || [], [teamMembers])
-  const maxTeamReached = teamList.length >= PLANS[userPlan as keyof typeof PLANS].teamMembers
-  const hasReachedLimit = teamList.length >= PLANS[userPlan as keyof typeof PLANS].teamMembers
 
   const fetchTeamMembers = async () => {
     if (!user) return
@@ -69,10 +47,6 @@ export default function TeamPage() {
 
         if (error) throw error
         setTeamMembers(data || [])
-<<<<<<< HEAD
-=======
-      }
->>>>>>> parent of ccd6de1 (prueba1.0)
     } catch (error: any) {
       toast({
         title: "Error",
@@ -95,15 +69,6 @@ export default function TeamPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (hasReachedLimit) {
-      toast({
-        title: "Límite alcanzado",
-        description: `Tu plan actual (${userPlan}) permite un máximo de ${PLANS[userPlan as keyof typeof PLANS].teamMembers} miembro(s) del equipo. Actualiza tu plan para agregar más miembros.`,
-        variant: "destructive",
-      })
-      return
-    }
 
     try {
       const { error } = await supabase.from("team_members").insert({
@@ -178,15 +143,11 @@ export default function TeamPage() {
         <h1 className="text-3xl font-bold">Equipo</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button
-              onClick={() => !maxTeamReached && setOpen(true)}
-              disabled={maxTeamReached}
-              variant={maxTeamReached ? "destructive" : "default"}
-            >
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
-              {maxTeamReached ? "Límite alcanzado" : "Nuevo miembro"}
-              </Button>
-            </DialogTrigger>
+              Nuevo miembro
+            </Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Agregar miembro al equipo</DialogTitle>
@@ -245,25 +206,7 @@ export default function TeamPage() {
         </Dialog>
       </div>
 
-<<<<<<< HEAD
-      {hasReachedLimit && userPlan !== 'premium' && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTitle>Límite alcanzado</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>Has alcanzado el límite de miembros del equipo de tu plan actual.</span>
-            <UpgradeButton variant="outline" className="ml-4" />
-          </AlertDescription>
-        </Alert>
-      )}
-
       {loading ? loadingSkeleton : teamList.length === 0 ? (
-=======
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
-        </div>
-      ) : teamMembers.length === 0 ? (
->>>>>>> parent of ccd6de1 (prueba1.0)
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Users className="h-10 w-10 text-muted-foreground mb-4" />
@@ -271,13 +214,9 @@ export default function TeamPage() {
             <p className="text-muted-foreground text-center mb-6">
               Aún no has agregado ningún miembro a tu equipo. Agrega miembros para que aparezcan en tu perfil.
             </p>
-            <Button
-              onClick={() => setOpen(true)}
-              disabled={maxTeamReached}
-              variant={maxTeamReached ? "destructive" : "default"}
-            >
+            <Button onClick={() => setOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              {maxTeamReached ? "Límite alcanzado" : "Agregar miembro"}
+              Agregar miembro
             </Button>
           </CardContent>
         </Card>

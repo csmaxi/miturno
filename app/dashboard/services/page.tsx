@@ -28,7 +28,6 @@ export default function ServicesPage() {
   const { user, loading: userLoading } = useUserContext()
   const [services, setServices] = useState<any[]>([])
   const [open, setOpen] = useState(false)
-  const [userPlan, setUserPlan] = useState<'free' | 'premium'>('free')
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -39,32 +38,6 @@ export default function ServicesPage() {
 
   const supabase = createClientSupabaseClient()
   const servicesList = useMemo(() => services || [], [services])
-<<<<<<< HEAD
-  const maxServicesReached = userPlan === 'free' && servicesList.length >= 3
-  const hasReachedLimit = userPlan === 'free' && servicesList.length >= 3
-
-  const fetchUserPlan = async () => {
-    if (!user) return
-    try {
-      const { data: userData, error } = await supabase
-        .from("users")
-        .select("subscription_plan")
-        .eq("id", user.id)
-        .single()
-      
-      if (error) {
-        console.error("Error fetching user plan:", error)
-        return
-      }
-      
-      setUserPlan(userData?.subscription_plan || 'free')
-    } catch (error) {
-      console.error("Error in fetchUserPlan:", error)
-    }
-  }
-=======
-  const maxServicesReached = servicesList.length >= 3
->>>>>>> parent of ccd6de1 (prueba1.0)
 
   const fetchServices = useCallback(async () => {
     if (!user) return []
@@ -85,10 +58,6 @@ export default function ServicesPage() {
     }
   }, [servicesData])
 
-  useEffect(() => {
-    fetchUserPlan()
-  }, [user])
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -100,15 +69,6 @@ export default function ServicesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (userPlan === 'free' && services.length >= 3) {
-      toast({
-        title: "Límite alcanzado",
-        description: "Has alcanzado el límite de servicios de tu plan actual. Actualiza a Premium para crear más servicios.",
-        variant: "destructive",
-      })
-      return
-    }
 
     try {
       const { error } = await supabase.from("services").insert({
@@ -185,13 +145,9 @@ export default function ServicesPage() {
         <h1 className="text-3xl font-bold">Servicios</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button
-              onClick={() => !maxServicesReached && setOpen(true)}
-              disabled={maxServicesReached}
-              variant={maxServicesReached ? "destructive" : "default"}
-            >
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
-              {maxServicesReached ? "Límite alcanzado" : "Nuevo servicio"}
+              Nuevo servicio
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -271,13 +227,9 @@ export default function ServicesPage() {
             <p className="text-muted-foreground text-center mb-6">
               Aún no has creado ningún servicio. Crea tu primer servicio para que tus clientes puedan reservar turnos.
             </p>
-            <Button
-              onClick={() => setOpen(true)}
-              disabled={maxServicesReached}
-              variant={maxServicesReached ? "destructive" : "default"}
-            >
+            <Button onClick={() => setOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              {maxServicesReached ? "Límite alcanzado" : "Crear servicio"}
+              Crear servicio
             </Button>
           </CardContent>
         </Card>
