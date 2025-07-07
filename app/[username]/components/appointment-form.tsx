@@ -18,13 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 import { generateWhatsAppLink, formatAppointmentNotificationForOwner } from "@/lib/whatsapp-direct-service"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info } from "lucide-react"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +27,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
 const SOUTH_AMERICAN_COUNTRIES = [
@@ -60,7 +53,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const { toast } = useToast()
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
-  const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -241,7 +233,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
       setSuccess(true)
       setShowSuccessDialog(true)
-      setIsOpen(false) // Cerrar el formulario
 
       // Resetear formulario
       setFormData({
@@ -305,21 +296,16 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
           </AlertDialogContent>
         </AlertDialog>
 
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button 
-              className="fixed right-4 bottom-4 shadow-lg bg-primary hover:bg-primary/90 text-white gap-2 z-50"
-              size="lg"
-            >
-              <CalendarIcon2 className="h-5 w-5" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarIcon2 className="h-5 w-5 text-primary" />
               Reservar turno
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Reservar turno</SheetTitle>
-            </SheetHeader>
-            <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+            </CardTitle>
+            <CardDescription>Completa el formulario para reservar tu turno</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre completo</Label>
                 <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
@@ -456,28 +442,23 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
                 {loading ? "Reservando..." : "Reservar turno"}
               </Button>
             </form>
-          </SheetContent>
-        </Sheet>
+          </CardContent>
+        </Card>
       </>
     )
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button 
-          className="fixed right-4 bottom-4 shadow-lg bg-primary hover:bg-primary/90 text-white gap-2 z-50"
-          size="lg"
-        >
-          <CalendarIcon2 className="h-5 w-5" />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CalendarIcon2 className="h-5 w-5 text-primary" />
           Reservar turno
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Reservar turno</SheetTitle>
-        </SheetHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        </CardTitle>
+        <CardDescription>Completa el formulario para reservar tu turno</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Nombre completo</Label>
             <Input id="name" name="name" placeholder="Tu nombre" value={formData.name} onChange={handleChange} required />
@@ -614,7 +595,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
             {loading ? "Reservando..." : "Reservar turno"}
           </Button>
         </form>
-      </SheetContent>
-    </Sheet>
+      </CardContent>
+    </Card>
   )
 }
