@@ -140,11 +140,11 @@ export default function UserProfilePage({
       <Navbar />
       <main className="flex-1">
         {/* Header */}
-        <header className="bg-gradient-to-r from-slate-50 to-slate-100/50 backdrop-blur-sm border-b">
+        <header className="bg-background/80 backdrop-blur-sm border-b">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center">
               <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20 ring-4 ring-white shadow-lg">
+                <Avatar className="h-20 w-20 ring-4 ring-background shadow-lg">
                   {userData.profile_image_url ? (
                     <OptimizedImage
                       src={userData.profile_image_url}
@@ -152,19 +152,19 @@ export default function UserProfilePage({
                       className="object-cover"
                     />
                   ) : (
-                    <AvatarFallback className="text-3xl font-semibold bg-gradient-to-br from-primary to-primary/80 text-white">
+                    <AvatarFallback className="text-3xl font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
                       {userData.full_name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   )}
                 </Avatar>
                 <div className="text-center sm:text-left">
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold text-foreground">
                     {userData.full_name}
                   </h1>
                   <p className="text-lg text-muted-foreground font-medium mt-1">@{userData.username}</p>
                   {userData.profile_description && (
                     <div className="mt-3">
-                      <p className="text-base text-slate-600 leading-relaxed max-w-md">
+                      <p className="text-base text-muted-foreground leading-relaxed max-w-md">
                         {userData.profile_description}
                       </p>
                     </div>
