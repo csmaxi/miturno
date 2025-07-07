@@ -251,13 +251,18 @@ export default function UserProfilePage({
               {teamMembers.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Nuestro Equipo</CardTitle>
-                    <CardDescription>Conoce a nuestros profesionales</CardDescription>
+                    <div className="flex justify-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      <CardTitle>Equipo</CardTitle>
+                    </div>
+                    <div className="flex justify-center">
+                      <CardDescription>Conoce a nuestro equipo</CardDescription>
+                    </div>
                   </CardHeader>
-                  <CardContent className="grid gap-4">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {teamMembers.map((member) => (
-                      <div key={member.id} className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
+                      <div key={member.id} className="flex flex-col items-center text-center">
+                        <Avatar className="h-32 w-32 mb-2 border-2 border-black">
                           {member.image_url ? (
                             <OptimizedImage
                               src={member.image_url}
@@ -265,25 +270,27 @@ export default function UserProfilePage({
                               className="object-cover"
                             />
                           ) : (
-                            <AvatarFallback>
+                            <AvatarFallback className="text-4xl">
                               {member.name.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           )}
                         </Avatar>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{member.name}</h3>
-                          {member.role && (
-                            <p className="text-sm text-muted-foreground">{member.role}</p>
-                          )}
-                        </div>
+                        <h3 className="font-medium">{member.name}</h3>
+                        {member.role && (
+                          <p className="text-sm text-muted-foreground">{member.role}</p>
+                        )}
                         {member.bio && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(`https://instagram.com/${member.bio.replace("@", "")}`)}
-                          >
-                            <Instagram className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center mt-1">
+                            <Instagram className="h-3 w-3 mr-1 text-pink-500" />
+                            <a
+                              href={`https://instagram.com/${member.bio.replace("@", "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-pink-500 hover:underline"
+                            >
+                              {member.bio}
+                            </a>
+                          </div>
                         )}
                       </div>
                     ))}
