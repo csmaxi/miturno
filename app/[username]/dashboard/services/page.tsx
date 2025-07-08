@@ -1,204 +1,114 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Pencil, Trash2, AlertCircle } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
-import { UpgradeButton } from "@/app/components/upgrade-button"
+import { Plus, Edit, Trash2, AlertCircle } from "lucide-react"
+import { useUserContext } from "@/lib/context/UserContext"
 
 interface Service {
   id: string
   name: string
   description: string
-  duration: number
   price: number
-}
-
-const PLANS = {
-  free: { services: 3 },
-  premium: { services: Infinity },
-} as const
-
-type UserPlan = keyof typeof PLANS
-
-interface FormData {
-  name: string
-  description: string
-  duration: number
-  price: number
+  created_at: string
 }
 
 export default function ServicesPage() {
   const { toast } = useToast()
+  const { user } = useUserContext()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [openDialog, setOpenDialog] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
-    duration: 30,
-    price: 0,
+    price: ""
   })
-  const [userPlan, setUserPlan] = useState<UserPlan>("free")
 
-  const supabase = createClientSupabaseClient()
-  const servicesList = useMemo(() => services || [], [services])
-  const maxServicesReached =
-    userPlan !== "premium" &&
-    servicesList.length >= PLANS[userPlan].services
+  const fetchServices = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const supabase = createClientSupabaseClient()
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      setServices(data || [])
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron cargar los servicios",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [user, toast])
 
   useEffect(() => {
     fetchServices()
-    fetchUserPlan()
-  }, [])
-
-  const fetchUserPlan = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session) return
-
-    try {
-      const { data: userData, error } = await supabase
-        .from("users")
-        .select("subscription_plan")
-        .eq("id", session.user.id)
-        .single()
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo cargar el plan de suscripción",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (userData) {
-        const plan = (userData.subscription_plan?.toLowerCase() || "free") as UserPlan
-        setUserPlan(plan)
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al cargar el plan de suscripción",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const fetchServices = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session) return setLoading(false)
-
-    const { data, error } = await supabase
-      .from("services")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .order("name")
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los servicios",
-        variant: "destructive",
-      })
-    } else {
-      setServices(data || [])
-    }
-
-    setLoading(false)
-  }, [supabase, toast])
+  }, [fetchServices])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (maxServicesReached) {
-      toast({
-        title: "Límite alcanzado",
-        description: "Has alcanzado el límite de servicios de tu plan actual. Actualizar a Premium",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session) {
-      toast({
-        title: "Error",
-        description: "Debes iniciar sesión para agregar un servicio",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!user) return
 
     try {
+      const supabase = createClientSupabaseClient()
+      const serviceData = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: parseFloat(formData.price) || 0,
+        user_id: user.id
+      }
+
       if (editingService) {
         const { error } = await supabase
           .from("services")
-          .update({
-            name: formData.name,
-            description: formData.description,
-            duration: formData.duration,
-            price: formData.price,
-            updated_at: new Date().toISOString(),
-          })
+          .update(serviceData)
           .eq("id", editingService.id)
-          .eq("user_id", session.user.id)
 
         if (error) throw error
 
         toast({
           title: "Servicio actualizado",
-          description: "El servicio ha sido actualizado correctamente",
+          description: "El servicio ha sido actualizado correctamente.",
         })
       } else {
         const { error } = await supabase
           .from("services")
-          .insert({
-            user_id: session.user.id,
-            name: formData.name,
-            description: formData.description,
-            duration: formData.duration,
-            price: formData.price,
-          })
+          .insert(serviceData)
 
         if (error) throw error
 
         toast({
           title: "Servicio creado",
-          description: "El servicio ha sido creado correctamente",
+          description: "El servicio ha sido creado correctamente.",
         })
       }
 
-      setIsDialogOpen(false)
-      setFormData({ name: "", description: "", duration: 30, price: 0 })
+      setOpenDialog(false)
       setEditingService(null)
+      setFormData({ name: "", description: "", price: "" })
       fetchServices()
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "No se pudo guardar el servicio",
+        description: error.message || "No se pudo guardar el servicio",
         variant: "destructive",
       })
     }
@@ -209,30 +119,28 @@ export default function ServicesPage() {
     setFormData({
       name: service.name,
       description: service.description,
-      duration: service.duration,
-      price: service.price,
+      price: service.price.toString()
     })
-    setIsDialogOpen(true)
+    setOpenDialog(true)
   }
 
   const handleDelete = async (serviceId: string) => {
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session) return
+    if (!confirm("¿Estás seguro de que quieres eliminar este servicio?")) return
 
     try {
+      const supabase = createClientSupabaseClient()
       const { error } = await supabase
         .from("services")
         .delete()
         .eq("id", serviceId)
-        .eq("user_id", session.user.id)
 
       if (error) throw error
 
       toast({
         title: "Servicio eliminado",
-        description: "El servicio ha sido eliminado correctamente",
+        description: "El servicio ha sido eliminado correctamente.",
       })
+
       fetchServices()
     } catch (error: any) {
       toast({
@@ -243,38 +151,43 @@ export default function ServicesPage() {
     }
   }
 
-  if (loading) return <div>Cargando...</div>
+  const resetForm = () => {
+    setFormData({ name: "", description: "", price: "" })
+    setEditingService(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+      </div>
+    )
+  }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Servicios</h1>
-          <p className="text-muted-foreground mt-2">
-            Gestiona los servicios que ofreces a tus clientes
-          </p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Servicios</h1>
+        <Dialog open={openDialog} onOpenChange={(open) => {
+          setOpenDialog(open)
+          if (!open) resetForm()
+        }}>
           <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditingService(null)
-                setFormData({ name: "", description: "", duration: 30, price: 0 })
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Servicio
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar servicio
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingService ? "Editar Servicio" : "Nuevo Servicio"}
+                {editingService ? "Editar servicio" : "Agregar servicio"}
               </DialogTitle>
               <DialogDescription>
-                {editingService
+                {editingService 
                   ? "Modifica los detalles del servicio"
-                  : "Agrega un nuevo servicio a tu lista"}
+                  : "Agrega un nuevo servicio que ofreces"
+                }
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -284,6 +197,7 @@ export default function ServicesPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ej: Corte de pelo"
                   required
                 />
               </div>
@@ -293,18 +207,8 @@ export default function ServicesPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duración (minutos)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  min={15}
-                  step={15}
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                  required
+                  placeholder="Describe el servicio..."
+                  rows={3}
                 />
               </div>
               <div className="space-y-2">
@@ -312,11 +216,11 @@ export default function ServicesPage() {
                 <Input
                   id="price"
                   type="number"
-                  min={0}
-                  step={0.01}
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  required
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
                 />
               </div>
               <DialogFooter>
@@ -329,47 +233,60 @@ export default function ServicesPage() {
         </Dialog>
       </div>
 
-      {maxServicesReached && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Límite de servicios alcanzado</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>
-              Has alcanzado el límite de {PLANS[userPlan].services} servicios para tu plan actual.
-            </span>
-            <UpgradeButton variant="outline" className="ml-4" />
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {services.map((service) => (
-          <div key={service.id} className="p-4 border rounded-lg space-y-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold">{service.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {service.duration} minutos
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(service.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+      {services.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <div className="text-muted-foreground mb-4">
+              <Plus className="h-10 w-10" />
             </div>
-            {service.description && (
-              <p className="text-sm text-muted-foreground">{service.description}</p>
-            )}
-            {service.price > 0 && (
-              <p className="text-sm font-medium">${service.price.toFixed(2)}</p>
-            )}
-          </div>
-        ))}
-      </div>
+            <p className="text-lg font-medium mb-2">No hay servicios</p>
+            <p className="text-muted-foreground text-center mb-6">
+              Comienza agregando tu primer servicio para que tus clientes puedan reservar.
+            </p>
+            <Button onClick={() => setOpenDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar servicio
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {services.map((service) => (
+            <Card key={service.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{service.name}</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(service)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(service.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <CardDescription>
+                  {service.description || "Sin descripción"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Badge variant="secondary" className="text-sm">
+                  ${service.price.toLocaleString('es-AR')}
+                </Badge>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

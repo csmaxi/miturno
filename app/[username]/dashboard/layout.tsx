@@ -1,23 +1,17 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { useState } from "react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import {
-  Calendar,
-  CreditCard,
-  Settings,
-  Users,
-  LayoutDashboard,
-  ClipboardList,
-} from "lucide-react"
+import { Calendar, Settings, Users, Package, Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-const navigation = [
+const items = [
   {
-    title: "Dashboard",
+    title: "Resumen",
     href: "/dashboard",
-    icon: LayoutDashboard,
+    icon: Calendar,
   },
   {
     title: "Turnos",
@@ -27,7 +21,7 @@ const navigation = [
   {
     title: "Servicios",
     href: "/dashboard/services",
-    icon: ClipboardList,
+    icon: Package,
   },
   {
     title: "Equipo",
@@ -35,9 +29,9 @@ const navigation = [
     icon: Users,
   },
   {
-    title: "Suscripción",
-    href: "/dashboard/subscription",
-    icon: CreditCard,
+    title: "Disponibilidad",
+    href: "/dashboard/availability",
+    icon: Clock,
   },
   {
     title: "Configuración",
@@ -54,35 +48,36 @@ export default function DashboardLayout({
   const pathname = usePathname()
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden w-64 border-r bg-gray-50/40 lg:block">
-        <div className="flex h-full flex-col gap-2">
-          <div className="flex h-[60px] items-center border-b px-6">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <span className="text-lg">MiTurno</span>
-            </Link>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-            <nav className="grid items-start px-4 text-sm font-medium">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900",
-                    pathname === item.href && "bg-gray-100 text-gray-900"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.title}
-                </Link>
-              ))}
-            </nav>
+    <div className="flex min-h-screen flex-col space-y-6">
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="container flex h-16 items-center justify-between py-4">
+          <div className="flex gap-6 md:gap-10">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
           </div>
         </div>
-      </div>
-      <div className="flex-1">
-        <main className="flex-1 overflow-y-auto">
+      </header>
+      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
+        <aside className="hidden w-[200px] flex-col md:flex">
+          <nav className="grid items-start gap-2">
+            {items.map((item, index) => {
+              const Icon = item.icon
+              return (
+                <Link key={index} href={item.href}>
+                  <span
+                    className={cn(
+                      "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                      pathname === item.href ? "bg-accent" : "transparent"
+                    )}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.title}</span>
+                  </span>
+                </Link>
+              )
+            })}
+          </nav>
+        </aside>
+        <main className="flex w-full flex-1 flex-col overflow-hidden">
           {children}
         </main>
       </div>

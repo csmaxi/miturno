@@ -7,8 +7,6 @@ import { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 interface UserContextType {
   user: User | null
   loading: boolean
-  userPlan: string
-  refetchUserPlan: () => Promise<void>
 }
 
 const UserContext = createContext<UserContextType | null>(null)
@@ -16,28 +14,6 @@ const UserContext = createContext<UserContextType | null>(null)
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const { user, setUser, setUserData } = useAuthStore()
-  const [userPlan, setUserPlan] = useState('free')
-
-  const fetchUserPlan = async () => {
-    if (!user) return
-    try {
-      const supabase = createClientSupabaseClient()
-      const { data: userData, error } = await supabase
-        .from("users")
-        .select("subscription_plan")
-        .eq("id", user.id)
-        .single()
-      
-      if (error) {
-        console.error("Error fetching user plan:", error)
-        return
-      }
-      
-      setUserPlan(userData?.subscription_plan || 'free')
-    } catch (error) {
-      console.error("Error in fetchUserPlan:", error)
-    }
-  }
 
   useEffect(() => {
     const supabase = createClientSupabaseClient()
@@ -54,11 +30,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
 
         setUser(currentUser)
-        
-        if (currentUser) {
-          await fetchUserPlan()
-        }
-        
         setLoading(false)
       } catch (error) {
         console.error("Error in initializeUser:", error)
@@ -75,38 +46,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setUserData(null)
-        setUserPlan('free')
       } else if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user)
-        await fetchUserPlan()
       }
     })
 
-    // Suscribirse a cambios en la tabla users
-    const channel = supabase
-      .channel('user_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'users',
-          filter: `id=eq.${user?.id}`
-        },
-        async () => {
-          await fetchUserPlan()
-        }
-      )
-      .subscribe()
-
     return () => {
       subscription.unsubscribe()
-      channel.unsubscribe()
     }
-  }, [setUser, setUserData, user?.id])
+  }, [setUser, setUserData])
 
   return (
-    <UserContext.Provider value={{ user, loading, userPlan, refetchUserPlan: fetchUserPlan }}>
+    <UserContext.Provider value={{ user, loading }}>
       {children}
     </UserContext.Provider>
   )

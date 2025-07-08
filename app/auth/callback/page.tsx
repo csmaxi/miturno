@@ -4,117 +4,129 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
 
-export default function AuthCallback() {
+export default function AuthCallbackPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const [error, setError] = useState<string | null>(null)
-  const supabase = createClientSupabaseClient()
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
+  const [message, setMessage] = useState("")
 
   useEffect(() => {
-    const handleCallback = async () => {
+    const handleAuthCallback = async () => {
       try {
-        // Procesar la redirección de OAuth
-        const { data: { user }, error } = await supabase.auth.getUser()
-
-        if (error) {
-          throw error
+        const supabase = createClientSupabaseClient()
+        
+        // Obtener la sesión actual
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          throw sessionError
         }
 
-        if (user) {
-          // Verificar si el usuario ya tiene un perfil
-          const { data: userData, error: userError } = await supabase
+        if (!session) {
+          setStatus("error")
+          setMessage("No se pudo obtener la sesión")
+          return
+        }
+
+        // Verificar si el usuario ya existe en la tabla users
+        const { data: existingUser, error: userError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("id", session.user.id)
+          .single()
+
+        if (userError && userError.code !== "PGRST116") {
+          throw userError
+        }
+
+        // Si el usuario no existe, crear su perfil
+        if (!existingUser) {
+          const { error: insertError } = await supabase
             .from("users")
-            .select("*")
-            .eq("id", user.id)
-            .single()
-
-          if (userError && userError.code !== "PGRST116") {
-            // PGRST116 es "no se encontró ningún resultado"
-            throw userError
-          }
-
-          // Si el usuario no tiene perfil, crear uno
-          if (!userData) {
-            // Obtener el nombre de usuario preferido del localStorage
-            const preferredUsername =
-              localStorage.getItem("preferredUsername") ||
-              user.email?.split("@")[0] ||
-              `user${Date.now().toString().slice(-6)}`
-
-            // Verificar si el nombre de usuario ya existe
-            const { data: existingUser } = await supabase
-              .from("users")
-              .select("username")
-              .eq("username", preferredUsername)
-              .single()
-
-            // Si existe, agregar un sufijo aleatorio
-            const finalUsername = existingUser
-              ? `${preferredUsername}${Date.now().toString().slice(-4)}`
-              : preferredUsername
-
-            // Crear el perfil del usuario
-            const { error: profileError } = await supabase.from("users").insert({
-              id: user.id,
-              email: user.email,
-              username: finalUsername,
-              full_name:
-                user.user_metadata.full_name || user.email?.split("@")[0] || "Usuario",
-              profile_description: `Página de ${user.user_metadata.full_name || "Usuario"}`,
-              subscription_plan: 'free'
+            .insert({
+              id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.user_metadata?.full_name || "",
+              username: session.user.user_metadata?.preferred_username || session.user.email?.split("@")[0] || "",
             })
 
-            if (profileError) {
-              throw profileError
-            }
-
-            // Limpiar el localStorage
-            localStorage.removeItem("preferredUsername")
-
-            toast({
-              title: "Cuenta creada",
-              description: "Tu cuenta ha sido creada exitosamente.",
-            })
+          if (insertError) {
+            console.error("Error creating user profile:", insertError)
+            // No lanzar error aquí, el usuario puede completar su perfil después
           }
-
-          // Redirigir al dashboard
-          router.push("/dashboard")
-        } else {
-          // Si no hay usuario, redirigir a la página de inicio de sesión
-          router.push("/auth/login")
         }
-      } catch (err: any) {
-        console.error("Error en el callback:", err)
-        setError(err.message || "Ocurrió un error durante el proceso de autenticación.")
+
+        setStatus("success")
+        setMessage("¡Inicio de sesión exitoso!")
+        
+        toast({
+          title: "¡Bienvenido!",
+          description: "Has iniciado sesión correctamente.",
+        })
+
+        // Redirigir al dashboard después de un breve delay
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 1000)
+
+      } catch (error: any) {
+        console.error("Auth callback error:", error)
+        setStatus("error")
+        setMessage(error.message || "Error durante el inicio de sesión")
+        
         toast({
           title: "Error",
-          description: err.message || "Ocurrió un error durante el proceso de autenticación.",
+          description: error.message || "Error durante el inicio de sesión",
           variant: "destructive",
         })
-        router.push("/auth/login")
+
+        // Redirigir a login después de un delay
+        setTimeout(() => {
+          router.push("/auth/login")
+        }, 3000)
       }
     }
 
-    handleCallback()
-  }, [router, supabase, toast])
+    handleAuthCallback()
+  }, [router, toast])
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        {error ? (
-          <div>
-            <h1 className="text-2xl font-bold text-red-600">Error de autenticación</h1>
-            <p className="mt-2">{error}</p>
-          </div>
-        ) : (
-          <div>
-            <h1 className="text-2xl font-bold">Procesando tu inicio de sesión...</h1>
-            <p className="mt-2">Por favor espera mientras te redirigimos.</p>
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">
+            {status === "loading" && "Procesando..."}
+            {status === "success" && "¡Éxito!"}
+            {status === "error" && "Error"}
+          </CardTitle>
+          <CardDescription>
+            {status === "loading" && "Completando el inicio de sesión..."}
+            {status === "success" && "Redirigiendo al dashboard..."}
+            {status === "error" && "Redirigiendo al login..."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-center">
+          {status === "loading" && (
+            <div className="flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          )}
+          {status === "success" && (
+            <div className="text-green-600">
+              <p>{message}</p>
+            </div>
+          )}
+          {status === "error" && (
+            <div className="text-red-600">
+              <p>{message}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

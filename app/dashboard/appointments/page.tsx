@@ -1,32 +1,34 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { Calendar, Check, X, MessageSquare, Info } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  formatAppointmentConfirmationForClient,
-  formatAppointmentCancellationForClient,
-  generateWhatsAppLink,
-} from "@/lib/whatsapp-direct-service"
-import { useUserContext } from "@/lib/context/UserContext"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { useToast } from "@/hooks/use-toast"
+import { useUserContext } from "@/lib/context/UserContext"
+import { Check, X, Calendar, Info } from "lucide-react"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+
+interface Appointment {
+  id: string
+  client_name: string
+  client_email: string
+  client_phone: string
+  appointment_date: string
+  start_time: string
+  end_time: string
+  status: string
+  notes: string
+  services: { name: string }
+  team_members: { name: string }
+}
 
 export default function AppointmentsPage() {
   const { toast } = useToast()
@@ -41,49 +43,51 @@ export default function AppointmentsPage() {
   const [error, setError] = useState<any>(null)
 
   const fetchAppointments = useCallback(async () => {
-    if (!user) return []
-    const supabase = createClientSupabaseClient()
-    const { data, error } = await supabase
-      .from("appointments")
-      .select(`*, services:service_id (name), team_members:team_member_id (name)`)
-      .eq("user_id", user.id)
-      .order("appointment_date", { ascending: true })
-      .order("created_at", { ascending: false })
-    if (error) throw error
-    return data || []
-  }, [user])
-
-  useEffect(() => {
     if (!user) return
 
-    const supabase = createClientSupabaseClient()
-    
-    // Cargar datos iniciales
-    fetchAppointments()
-      .then(data => {
-        setAppointments(data)
-        setLoading(false)
-      })
-      .catch(err => {
-        setError(err)
-        setLoading(false)
-      })
+    try {
+      const supabase = createClientSupabaseClient()
+      const { data, error } = await supabase
+        .from("appointments")
+        .select(`
+          *,
+          services:services(name),
+          team_members:team_members(name)
+        `)
+        .eq("user_id", user.id)
+        .order("appointment_date", { ascending: false })
 
-    // Configurar suscripción en tiempo real
+      if (error) throw error
+      setAppointments(data || [])
+    } catch (error: any) {
+      setError(error)
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron cargar los turnos",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [user, toast])
+
+  useEffect(() => {
+    fetchAppointments()
+
+    // Suscribirse a cambios en tiempo real
+    const supabase = createClientSupabaseClient()
     const subscription = supabase
-      .channel('appointments_changes')
+      .channel("appointments_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'appointments',
-          filter: `user_id=eq.${user.id}`
+          event: "*",
+          schema: "public",
+          table: "appointments",
+          filter: `user_id=eq.${user?.id}`,
         },
-        async () => {
-          // Cuando hay cambios, actualizar los datos
-          const newData = await fetchAppointments()
-          setAppointments(newData)
+        () => {
+          fetchAppointments()
         }
       )
       .subscribe()
@@ -91,89 +95,76 @@ export default function AppointmentsPage() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [user, fetchAppointments])
+  }, [fetchAppointments, user?.id])
 
   const refetch = useCallback(() => {
-    setLoading(true)
     fetchAppointments()
-      .then(data => {
-        setAppointments(data)
-        setLoading(false)
-      })
-      .catch(err => {
-        setError(err)
-        setLoading(false)
-      })
   }, [fetchAppointments])
 
   const handleStatusChange = useCallback(async (id: string, status: string) => {
     setProcessingAction(true)
     try {
+      // Primero obtener los datos del turno para el mensaje de WhatsApp
       const { data: appointmentData, error: fetchError } = await createClientSupabaseClient()
         .from("appointments")
         .select(`
           *,
-          services:service_id (name)
+          services:services(name),
+          team_members:team_members(name)
         `)
         .eq("id", id)
         .single()
 
       if (fetchError) throw fetchError
 
+      // Actualizar el estado del turno
       const { error } = await createClientSupabaseClient().from("appointments").update({ status }).eq("id", id)
       if (error) throw error
 
-      if (appointmentData && appointmentData.client_phone && (status === "confirmed" || status === "cancelled")) {
-        let message = status === "confirmed"
-          ? formatAppointmentConfirmationForClient(appointmentData, appointmentData.services, user)
-          : formatAppointmentCancellationForClient(appointmentData, appointmentData.services, user)
+      // Generar mensaje de WhatsApp
+      const message = status === "confirmed"
+        ? `¡Hola ${appointmentData.client_name}! Tu turno para ${appointmentData.services?.name || "el servicio"} el ${format(new Date(appointmentData.appointment_date), "PPP", { locale: es })} a las ${appointmentData.start_time.substring(0, 5)} ha sido confirmado. ¡Te esperamos!`
+        : `¡Hola ${appointmentData.client_name}! Lamentamos informarte que tu turno para ${appointmentData.services?.name || "el servicio"} el ${format(new Date(appointmentData.appointment_date), "PPP", { locale: es })} a las ${appointmentData.start_time.substring(0, 5)} ha sido cancelado. Por favor, agenda un nuevo turno.`
 
-        if (message) {
-          const whatsappLink = generateWhatsAppLink(appointmentData.client_phone, message)
-          window.open(whatsappLink, "_blank")
-        }
-      }
+      const whatsappLink = generateWhatsAppLink(appointmentData.client_phone, message)
+      window.open(whatsappLink, "_blank")
 
+      setActiveTab(status)
       toast({
         title: "Estado actualizado",
-        description: `El turno ha sido ${status === "confirmed" ? "confirmado" : status === "completed" ? "completado" : "cancelado"} exitosamente`,
+        description: `El turno ha sido ${status === "confirmed" ? "confirmado" : "cancelado"} exitosamente`,
       })
-
-      if (status === "confirmed") setActiveTab("confirmed")
-      else if (status === "cancelled") setActiveTab("cancelled")
-      else if (status === "completed") setActiveTab("completed")
-
       refetch()
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo actualizar el estado del turno",
+        description: error.message || "No se pudo actualizar el estado",
         variant: "destructive",
       })
     } finally {
       setProcessingAction(false)
     }
-  }, [toast, user, refetch])
+  }, [toast, refetch])
 
   const handleAddNotes = async () => {
     if (!selectedAppointment) return
 
     try {
       const { error } = await createClientSupabaseClient().from("appointments").update({ notes }).eq("id", selectedAppointment.id)
-
       if (error) throw error
 
       toast({
-        title: "Notas actualizadas",
-        description: "Las notas han sido actualizadas exitosamente",
+        title: "Notas guardadas",
+        description: "Las notas han sido guardadas correctamente",
       })
-
       setOpenDialog(false)
+      setNotes("")
+      setSelectedAppointment(null)
       refetch()
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "No se pudieron actualizar las notas",
+        description: error.message || "No se pudieron guardar las notas",
         variant: "destructive",
       })
     }
@@ -186,18 +177,19 @@ export default function AppointmentsPage() {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-800 dark:text-yellow-100">Pendiente</Badge>
-      case "confirmed":
-        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-800 dark:text-green-100">Confirmado</Badge>
-      case "cancelled":
-        return <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-800 dark:text-red-100">Cancelado</Badge>
-      case "completed":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-800 dark:text-blue-100">Completado</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      pending: "outline",
+      confirmed: "default",
+      completed: "secondary",
+      cancelled: "destructive"
     }
+    return <Badge variant={variants[status] || "outline"}>{status}</Badge>
+  }
+
+  const generateWhatsAppLink = (phone: string, message: string) => {
+    const formattedPhone = phone.replace(/\D/g, "")
+    const encodedMessage = encodeURIComponent(message)
+    return `https://wa.me/${formattedPhone}?text=${encodedMessage}`
   }
 
   const handleWhatsAppAction = useCallback(async (appointment: any, type: "confirm" | "cancel") => {
@@ -250,14 +242,15 @@ export default function AppointmentsPage() {
     [appointments]
   )
 
-  const hasReachedAppointmentLimit = (pendingAppointments.length + confirmedAppointments.length) >= 10
+  const completedAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "completed"),
+    [appointments]
+  )
 
-  const visiblePendingAppointments = useMemo(() => {
-    const allowed = Math.max(0, 10 - confirmedAppointments.length)
-    return pendingAppointments.slice(0, allowed)
-  }, [pendingAppointments, confirmedAppointments])
-
-  const hiddenPendingCount = pendingAppointments.length - visiblePendingAppointments.length
+  const cancelledAppointments = useMemo(
+    () => (appointments ?? []).filter((app: { status: string }) => app.status === "cancelled"),
+    [appointments]
+  )
 
   const renderAppointmentList = (appointmentList: any[]) => {
     if (appointmentList.length === 0) {
@@ -271,10 +264,6 @@ export default function AppointmentsPage() {
     return (
       <div className="space-y-4">
         {appointmentList.map((appointment, index) => {
-          // Check if this is the 11th appointment and it's pending
-          const isEleventhAppointment = index === 10 && appointment.status === "pending"
-          const shouldDisableButtons = isEleventhAppointment && hasReachedAppointmentLimit
-
           return (
             <Card key={appointment.id}>
               <CardContent className="p-4">
@@ -308,7 +297,7 @@ export default function AppointmentsPage() {
                           size="sm"
                           className="text-green-600 flex-1"
                           onClick={() => handleStatusChange(appointment.id, "confirmed")}
-                          disabled={processingAction || shouldDisableButtons}
+                          disabled={processingAction}
                         >
                           <Check className="mr-2 h-4 w-4" />
                           Confirmar
@@ -318,7 +307,7 @@ export default function AppointmentsPage() {
                           size="sm"
                           className="text-red-600 flex-1"
                           onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                          disabled={processingAction || shouldDisableButtons}
+                          disabled={processingAction}
                         >
                           <X className="mr-2 h-4 w-4" />
                           Cancelar
@@ -380,15 +369,6 @@ export default function AppointmentsPage() {
         <h1 className="text-3xl font-bold">Turnos</h1>
       </div>
 
-      {hasReachedAppointmentLimit && (
-        <Alert variant="default" className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-900 dark:text-yellow-200">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Has alcanzado el límite de 10 turnos (pendientes + confirmados). Los turnos adicionales no podrán ser confirmados hasta que se libere espacio.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
@@ -420,7 +400,7 @@ export default function AppointmentsPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending">{renderAppointmentList(visiblePendingAppointments)}</TabsContent>
+          <TabsContent value="pending">{renderAppointmentList(pendingAppointments)}</TabsContent>
           <TabsContent value="confirmed">{renderAppointmentList(confirmedAppointments)}</TabsContent>
           <TabsContent value="completed">{renderAppointmentList(completedAppointments)}</TabsContent>
           <TabsContent value="cancelled">{renderAppointmentList(cancelledAppointments)}</TabsContent>
@@ -452,4 +432,13 @@ export default function AppointmentsPage() {
       </Dialog>
     </div>
   )
+}
+
+// Funciones auxiliares para formatear mensajes
+function formatAppointmentConfirmationForClient(appointment: any, service: any, user: any) {
+  return `¡Hola ${appointment.client_name}! Tu turno para ${service.name || "el servicio"} el ${format(new Date(appointment.appointment_date), "PPP", { locale: es })} a las ${appointment.start_time.substring(0, 5)} ha sido confirmado. ¡Te esperamos!`
+}
+
+function formatAppointmentCancellationForClient(appointment: any, service: any, user: any) {
+  return `¡Hola ${appointment.client_name}! Lamentamos informarte que tu turno para ${service.name || "el servicio"} el ${format(new Date(appointment.appointment_date), "PPP", { locale: es })} a las ${appointment.start_time.substring(0, 5)} ha sido cancelado. Por favor, agenda un nuevo turno.`
 }

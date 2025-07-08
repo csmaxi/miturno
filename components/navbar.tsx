@@ -11,18 +11,17 @@ import { useRouter } from "next/navigation"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useAuthStore } from "@/lib/store/auth-store"
 import { useUserContext } from "@/lib/context/UserContext"
-import { Badge } from "@/components/ui/badge"
 
 export function Navbar() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const supabase = useMemo(() => createClientSupabaseClient(), [])
-  const { setUser, setUserData } = useAuthStore()
-  const { user, loading, userPlan } = useUserContext()
+  const { setUser, setUserData, userData } = useAuthStore()
+  const { user, loading } = useUserContext()
 
   // Check if user is on their own profile page
-  const isOwnProfile = user && pathname.startsWith(`/${user.username}`)
+  const isOwnProfile = userData && pathname.startsWith(`/${userData.username}`)
 
   const handleSignOut = async () => {
     try {
@@ -52,11 +51,6 @@ export function Navbar() {
       label: "Explorar",
       active: pathname === "/explorar",
     },
-    // {
-    //   href: "/pricing",
-    //   label: "Precios",
-    //   active: pathname === "/pricing",
-    // },
     ...(user ? [{
       href: "/dashboard",
       label: "Dashboard",
@@ -73,11 +67,6 @@ export function Navbar() {
             <Link href="/" className="flex items-center space-x-2">
               <Calendar className="h-6 w-6" />
               <span className="font-bold text-xl">MiTurno</span>
-              {userPlan === 'premium' && (
-                <Badge variant="default" className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none">
-                  Pro
-                </Badge>
-              )}
             </Link>
             <div className="flex items-center space-x-2">
               {isOwnProfile && (
@@ -122,11 +111,6 @@ export function Navbar() {
             <Link href="/" className="flex items-center space-x-2">
               <Calendar className="h-6 w-6" />
               <span className="font-bold text-xl">MiTurno</span>
-              {userPlan === 'premium' && (
-                <Badge variant="default" className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none">
-                  Pro
-                </Badge>
-              )}
             </Link>
             <nav className="flex items-center space-x-6">
               {routes.map((route) => (

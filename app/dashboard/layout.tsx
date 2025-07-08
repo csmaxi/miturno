@@ -13,37 +13,27 @@ interface UserData {
   // Agrega otros campos según tu tabla "users"
 }
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Redirigir a login si no hay usuario autenticado
-  if (!user) {
-    redirect("/auth/login");
-  }
-
-  // Obtener datos del usuario
-  const { data: userData, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", user.id)
-    .single() as { data: UserData | null; error: any };
-
-  // Manejar errores o falta de datos
-  if (error || !userData) {
-    redirect("/dashboard/complete-profile");
-  }
-
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <div className="flex flex-1 flex-col md:flex-row">
-        <DashboardNav user={userData} />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
+    <div className="flex min-h-screen flex-col space-y-6">
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="container flex h-16 items-center justify-between py-4">
+          <div className="flex gap-6 md:gap-10">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+          </div>
+        </div>
+      </header>
+      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
+        <aside className="hidden w-[200px] flex-col md:flex">
+          <DashboardNav />
+        </aside>
+        <main className="flex w-full flex-1 flex-col overflow-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );

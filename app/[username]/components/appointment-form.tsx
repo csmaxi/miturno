@@ -188,18 +188,9 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
 
       // Realizar todas las consultas necesarias en paralelo
       const [
-        { data: subscriptionData },
         { data: monthlyAppointments },
         { data: ownerData }
       ] = await Promise.all([
-        supabase
-          .from("subscriptions")
-          .select("plan")
-          .eq("user_id", userId)
-          .eq("status", "active")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single(),
         supabase
           .from("appointments")
           .select("id")
