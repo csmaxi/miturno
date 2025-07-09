@@ -23,12 +23,12 @@ interface UserData {
 
 // Componente de características
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="flex flex-col items-center space-y-4 text-center p-6 rounded-lg border bg-card">
-    <div className="bg-primary/10 p-4 rounded-full">
+  <div className="flex flex-col items-center space-y-3 sm:space-y-4 text-center p-4 sm:p-6 rounded-lg border bg-card">
+    <div className="bg-primary/10 p-3 sm:p-4 rounded-full">
       {icon}
     </div>
-    <h3 className="text-xl font-bold">{title}</h3>
-    <p className="text-muted-foreground">{description}</p>
+    <h3 className="text-lg sm:text-xl font-bold">{title}</h3>
+    <p className="text-sm sm:text-base text-muted-foreground">{description}</p>
   </div>
 );
 
@@ -97,28 +97,28 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       {user ? (
-        <section className="h-[calc(100vh-4rem)] flex items-center justify-center">
+        <section className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-8 sm:py-12 -mt-16 md:-mt-20">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-6 text-center">
-              <div className="space-y-4 max-w-full overflow-x-auto">
-                <div className="flex flex-wrap justify-center items-baseline gap-x-2">
-                  <span className="text-4xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+            <div className="flex flex-col items-center justify-center space-y-4 sm:space-y-6 text-center">
+              <div className="space-y-3 sm:space-y-4 max-w-full overflow-x-auto">
+                <div className="flex flex-wrap justify-center items-baseline gap-x-1 sm:gap-x-2">
+                  <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight">
                     ¡Bienvenido,
                   </span>
-                  <span className="text-4xl font-bold tracking-tight text-primary sm:text-4xl md:text-5xl lg:text-6xl truncate max-w-[60vw]">
+                  <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-primary truncate max-w-[50vw] sm:max-w-[60vw]">
                     {user.user_metadata?.full_name || user.email || "Usuario"}
                   </span>
-                  <span className="text-4xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+                  <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight">
                     !
                   </span>
                 </div>
-                <p className="text-gray-500 md:text-xl dark:text-gray-400">
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-500 dark:text-gray-400 px-4">
                   Gracias por ser parte de MiTurno. Gestiona tus citas y turnos desde tu panel.
                 </p>
               </div>
 
-              <div className="flex gap-4">
-                <Button asChild size="lg">
+              <div className="flex gap-3 sm:gap-4">
+                <Button asChild size="lg" className="text-sm sm:text-base">
                   <Link href="/dashboard">Ir a mi Dashboard</Link>
                 </Button>
               </div>
@@ -127,26 +127,26 @@ export default function Home() {
         </section>
       ) : (
         <>
-          <section className="h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-b from-background to-muted">
+          <section className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-b from-background to-muted py-8 sm:py-12 -mt-16 md:-mt-20">
             <div className="container px-4 md:px-6">
-              <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="space-y-2">
-                  <h1 className="text-5xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl mb-4">
+              <div className="flex flex-col items-center justify-center space-y-4 sm:space-y-6 text-center">
+                <div className="space-y-2 sm:space-y-3">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-3 sm:mb-4 px-4">
                     Potenciá tu agenda
                   </h1>
-                  <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+                  <p className="mx-auto max-w-[700px] text-sm sm:text-base md:text-lg lg:text-xl text-gray-500 dark:text-gray-400 px-4">
                     MiTurno es una plataforma que te permite gestionar tus citas y turnos con tu propia URL
                     personalizada.
                   </p>
                 </div>
-                <div className="w-full max-w-sm space-y-2">
-                  <div className="flex space-x-2">
+                <div className="w-full max-w-sm space-y-2 sm:space-y-3 px-4">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <div className="flex-1 relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground text-sm">
                         miturno.app/
                       </div>
                       <Input
-                        className="pl-[105px]"
+                        className="pl-[105px] text-sm sm:text-base"
                         placeholder=" usuario"
                         value={username}
                         onChange={handleUsernameChange}
@@ -154,18 +154,20 @@ export default function Home() {
                         aria-label="Nombre de usuario para tu URL personalizada"
                       />
                     </div>
-                    <Button onClick={handleUsernameSubmit}>Crear cuenta</Button>
+                    <Button onClick={handleUsernameSubmit} className="text-sm sm:text-base">
+                      Crear cuenta
+                    </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     ¿Ya tienes cuenta? <Link href="/auth/login" className="underline">Inicia sesión</Link>
                   </p>
                 </div>
               </div>
             </div>
           </section>
-          <section className="w-full py-12 md:py-24 lg:py-32">
+          <section className="w-full py-8 sm:py-12 md:py-16 lg:py-24">
             <div className="container px-4 md:px-6">
-              <div className="grid gap-6 lg:grid-cols-3 items-start">
+              <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
                 <FeatureCard
                   icon={<Users className="h-6 w-6 text-primary" />}
                   title="Creá tu cuenta"

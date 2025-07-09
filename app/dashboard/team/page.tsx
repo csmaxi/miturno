@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Users, Plus, Trash } from "lucide-react"
+import { Users, Plus, Trash, Edit } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,8 @@ export default function TeamPage() {
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editingMember, setEditingMember] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: "",
     position: "",
@@ -99,6 +101,57 @@ export default function TeamPage() {
       toast({
         title: "Error",
         description: error.message || "No se pudo agregar el miembro",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEdit = (member: any) => {
+    setEditingMember(member)
+    setFormData({
+      name: member.name,
+      position: member.position || "",
+      instagram: member.instagram || "",
+      image_url: member.image_url || "",
+    })
+    setEditOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const { error } = await supabase
+        .from("team_members")
+        .update({
+          name: formData.name,
+          position: formData.position,
+          instagram: formData.instagram,
+          image_url: formData.image_url,
+        })
+        .eq("id", editingMember.id)
+
+      if (error) throw error
+
+      toast({
+        title: "Miembro actualizado",
+        description: "El miembro ha sido actualizado exitosamente",
+      })
+
+      setFormData({
+        name: "",
+        position: "",
+        instagram: "",
+        image_url: "",
+      })
+
+      setEditingMember(null)
+      setEditOpen(false)
+      fetchTeamMembers()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el miembro",
         variant: "destructive",
       })
     }
@@ -204,6 +257,64 @@ export default function TeamPage() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar miembro del equipo</DialogTitle>
+              <DialogDescription>Modifica la información del miembro del equipo</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdate}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nombre</Label>
+                  <Input
+                    id="edit-name"
+                    name="name"
+                    placeholder="Nombre del miembro"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-position">Posición</Label>
+                  <Input
+                    id="edit-position"
+                    name="position"
+                    placeholder="Ej: Peluquero"
+                    value={formData.position}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-instagram">Instagram</Label>
+                  <Input
+                    id="edit-instagram"
+                    name="instagram"
+                    placeholder="@usuario"
+                    value={formData.instagram}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-image_url">URL de la imagen</Label>
+                  <Input
+                    id="edit-image_url"
+                    name="image_url"
+                    placeholder="https://..."
+                    value={formData.image_url}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Actualizar miembro</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {loading ? loadingSkeleton : teamList.length === 0 ? (
@@ -230,9 +341,14 @@ export default function TeamPage() {
                     <CardTitle>{member.name}</CardTitle>
                     <CardDescription>{member.position}</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id)}>
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(member)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id)}>
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

@@ -15,7 +15,7 @@ import {
   Avatar,
   AvatarFallback,
 } from "@/components/ui/avatar";
-import { Clock, Users, Instagram, ArrowLeft, Phone, MessageCircle } from "lucide-react";
+import { Clock, Users, Instagram, ArrowLeft, Phone, MessageCircle, Calendar } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import Link from "next/link";
 
@@ -33,13 +33,19 @@ interface AppointmentFormProps {
 
 // Componente de carga para el formulario
 const AppointmentFormLoader = () => (
-  <div className="animate-pulse">
-    <div className="h-8 bg-muted rounded w-3/4 mb-4" />
-    <div className="h-4 bg-muted rounded w-1/2 mb-6" />
+  <div className="space-y-6">
+    <div className="animate-pulse space-y-4">
+      <div className="h-6 bg-muted/50 rounded-lg w-2/3" />
+      <div className="h-4 bg-muted/50 rounded-lg w-1/2" />
+    </div>
     <div className="space-y-4">
-      <div className="h-10 bg-muted rounded" />
-      <div className="h-10 bg-muted rounded" />
-      <div className="h-10 bg-muted rounded" />
+      <div className="h-12 bg-muted/50 rounded-lg" />
+      <div className="h-12 bg-muted/50 rounded-lg" />
+      <div className="h-12 bg-muted/50 rounded-lg" />
+      <div className="h-12 bg-muted/50 rounded-lg" />
+    </div>
+    <div className="pt-4">
+      <div className="h-12 bg-primary/20 rounded-lg animate-pulse" />
     </div>
   </div>
 );
@@ -138,58 +144,106 @@ export default function UserProfilePage({
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 relative">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
         {/* Header */}
-        <header className="bg-background/80 backdrop-blur-sm border-b">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center">
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20 ring-4 ring-background shadow-lg">
-                  {userData.profile_image_url ? (
-                    <OptimizedImage
-                      src={userData.profile_image_url}
-                      alt={userData.full_name}
-                      className="object-cover"
-                    />
-                  ) : (
-                    <AvatarFallback className="text-3xl font-semibold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                      {userData.full_name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="text-center sm:text-left">
-                  <h1 className="text-3xl font-bold text-foreground">
+        <header className="relative bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-sm border-b mt-12">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,transparent,black)] dark:bg-grid-slate-700/25" />
+          
+          <div className="relative container mx-auto px-4 py-12 sm:py-16 lg:py-20">
+            <div className="flex flex-col items-center text-center space-y-6">
+              {/* Avatar Section */}
+              <div className="relative">
+                <div className="relative">
+                  <Avatar className="h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32 ring-4 ring-background shadow-2xl">
+                    {userData.profile_image_url ? (
+                      <OptimizedImage
+                        src={userData.profile_image_url}
+                        alt={userData.full_name}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <AvatarFallback className="text-4xl sm:text-5xl lg:text-6xl font-semibold bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground">
+                        {userData.full_name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  {/* Status indicator */}
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-background rounded-full shadow-lg">
+                    <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Info */}
+              <div className="space-y-3 max-w-2xl">
+                <div className="space-y-2">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight">
                     {userData.full_name}
                   </h1>
-                  <p className="text-lg text-muted-foreground font-medium mt-1">@{userData.username}</p>
-                  {userData.profile_description && (
-                    <div className="mt-3">
-                      <p className="text-base text-muted-foreground leading-relaxed max-w-md">
-                        {userData.profile_description}
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-1 h-1 bg-primary rounded-full" />
+                    <p className="text-lg sm:text-xl text-muted-foreground font-medium">
+                      @{userData.username}
+                    </p>
+                    <div className="w-1 h-1 bg-primary rounded-full" />
+                  </div>
+                </div>
+
+                {userData.profile_description && (
+                  <div className="mt-6">
+                    <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+                      {userData.profile_description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Quick Stats */}
+                <div className="flex items-center justify-center gap-6 pt-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{services.length} servicios</span>
+                  </div>
+                  <div className="w-px h-4 bg-border" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{teamMembers.length} equipo</span>
+                  </div>
+                  <div className="w-px h-4 bg-border" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>Disponible</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-16 relative">
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Services Selection */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Selecciona un Servicio</CardTitle>
-                  <CardDescription>Elige el servicio que deseas reservar</CardDescription>
+            <div className="space-y-8">
+              <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-card/50">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Selecciona un Servicio</CardTitle>
+                      <CardDescription className="text-base">Elige el servicio que deseas reservar</CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3">
-                    {services.map((service) => (
+                <CardContent className="p-6">
+                  <div className="grid gap-4">
+                    {services.map((service, index) => (
                       <div
                         key={service.id}
-                        className="p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md border-border hover:border-primary/50"
+                        className="group relative p-6 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-xl border-border hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
                         onClick={() => {
                           // This will be handled by the client component
                           window.dispatchEvent(new CustomEvent('serviceSelected', { 
@@ -209,119 +263,137 @@ export default function UserProfilePage({
                         }}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 rounded-full bg-primary" />
-                            <div>
-                              <h3 className="font-medium">{service.name}</h3>
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-primary to-primary/80 group-hover:scale-110 transition-transform duration-300" />
+                              <div className="absolute inset-0 w-5 h-5 rounded-full bg-primary/20 animate-ping" />
+                            </div>
+                            <div className="space-y-1">
+                              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{service.name}</h3>
                               {service.description && (
-                                <p className="text-sm text-muted-foreground">{service.description}</p>
+                                <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
                               )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {service.duration} min
+                          <div className="text-right space-y-2">
+                            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">{service.duration} min</span>
                             </div>
-                            {service.price && <p className="font-medium">${service.price.toLocaleString()}</p>}
+                            {service.price && (
+                              <div className="bg-primary/10 px-3 py-1 rounded-full">
+                                <p className="font-bold text-primary">${service.price.toLocaleString()}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
+                        {/* Hover effect */}
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Contact Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Información de Contacto</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {userData.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{userData.phone}</span>
-                    </div>
-                  )}
-                  {userData.phone && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full bg-transparent"
-                      onClick={() => window.open(`https://wa.me/${userData.phone?.replace(/\D/g, "")}`)}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Contactar por WhatsApp
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
 
-              {/* Team Members */}
-              {teamMembers.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      <CardTitle>Equipo</CardTitle>
-                    </div>
-                    <div className="flex justify-center">
-                      <CardDescription>Conoce a nuestro equipo</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {teamMembers.map((member) => (
-                      <div key={member.id} className="flex flex-col items-center text-center">
-                        <Avatar className="h-32 w-32 mb-2 border-2 border-black">
-                          {member.image_url ? (
-                            <OptimizedImage
-                              src={member.image_url}
-                              alt={member.name}
-                              className="object-cover"
-                            />
-                          ) : (
-                            <AvatarFallback className="text-4xl">
-                              {member.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <h3 className="font-medium">{member.name}</h3>
-                        {member.role && (
-                          <p className="text-sm text-muted-foreground">{member.role}</p>
-                        )}
-                        {member.bio && (
-                          <div className="flex items-center mt-1">
-                            <Instagram className="h-3 w-3 mr-1 text-pink-500" />
-                            <a
-                              href={`https://instagram.com/${member.bio.replace("@", "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-pink-500 hover:underline"
-                            >
-                              {member.bio}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
             {/* Booking Form */}
-            <div id="booking-form">
-              <Suspense fallback={<AppointmentFormLoader />}>
-                <AppointmentForm
-                  userId={userData.id}
-                  services={services}
-                  teamMembers={teamMembers}
-                  availability={availability}
-                />
-              </Suspense>
+            <div id="booking-form" className="relative">
+              <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-card/50">
+                <CardHeader className="bg-gradient-to-r from-blue-500/5 to-blue-500/10 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Reserva tu Turno</CardTitle>
+                      <CardDescription className="text-base">Completa el formulario para agendar tu cita</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <Suspense fallback={<AppointmentFormLoader />}>
+                    <AppointmentForm
+                      userId={userData.id}
+                      services={services}
+                      teamMembers={teamMembers}
+                      availability={availability}
+                    />
+                  </Suspense>
+                </CardContent>
+              </Card>
             </div>
           </div>
+
+          {/* Team Members - Full Width */}
+          {teamMembers.length > 0 && (
+            <div className="mt-12">
+              <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-card/50">
+                <CardHeader className="bg-gradient-to-r from-purple-500/5 to-purple-500/10 border-b">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="p-2 bg-purple-500/10 rounded-lg">
+                      <Users className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="text-center">
+                      <CardTitle className="text-xl">Equipo</CardTitle>
+                      <CardDescription className="text-base">Conoce a nuestro equipo</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex justify-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-items-center max-w-4xl">
+                      {teamMembers.map((member) => (
+                        <div key={member.id} className="group relative flex flex-col items-center text-center p-4 rounded-xl border border-border hover:border-purple-500/30 hover:bg-gradient-to-br hover:from-purple-500/5 hover:to-transparent transition-all duration-300 w-full max-w-xs">
+                        <div className="relative mb-4">
+                          <Avatar className="h-24 w-24 sm:h-28 sm:w-28 ring-4 ring-background shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                            {member.image_url ? (
+                              <OptimizedImage
+                                src={member.image_url}
+                                alt={member.name}
+                                className="object-cover"
+                              />
+                            ) : (
+                              <AvatarFallback className="text-2xl sm:text-3xl font-semibold bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                                {member.name.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          {/* Status indicator */}
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-3 border-background rounded-full shadow-lg">
+                            <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-lg group-hover:text-purple-600 transition-colors">{member.name}</h3>
+                          {member.position && (
+                            <p className="text-sm text-muted-foreground font-medium">{member.position}</p>
+                          )}
+                          {member.instagram && (
+                            <div className="flex items-center justify-center mt-2">
+                              <div className="p-1 bg-pink-500/10 rounded-full">
+                                <Instagram className="h-3 w-3 text-pink-500" />
+                              </div>
+                              <a
+                                href={`https://instagram.com/${member.instagram.replace("@", "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-pink-500 hover:text-pink-600 font-medium ml-2 transition-colors"
+                              >
+                                {member.instagram}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -185,8 +185,8 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+        {/* <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1> */}
         <Button asChild className="w-full sm:w-auto">
           <Link href={`/${userData?.username}`} target="_blank">
             <ExternalLink className="mr-2 h-4 w-4" />

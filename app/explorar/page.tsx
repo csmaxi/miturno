@@ -172,7 +172,7 @@ export default function ExplorarPage({
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="container px-4 py-12 md:px-6">
+      <div className="container px-4 py-12 md:px-6 -mt-16 md:-mt-20">
         <div className="space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">

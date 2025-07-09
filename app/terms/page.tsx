@@ -12,7 +12,7 @@ export default async function TermsPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
-        <div className="container px-4 py-12 md:px-6">
+        <div className="container px-4 py-12 md:px-6 -mt-16 md:-mt-20">
           <div className="mx-auto max-w-3xl space-y-8">
             <div className="text-center">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl">Términos y Condiciones</h1>

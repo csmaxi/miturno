@@ -2,6 +2,7 @@ import type React from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "./components/dashboard-nav";
+import { MobileNav } from "./components/mobile-nav";
 import { Navbar } from "@/components/navbar";
 
 // Definir interfaz para tipado de userData
@@ -19,19 +20,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col space-y-6">
-      <header className="sticky top-0 z-40 border-b bg-background">
-        <div className="container flex h-16 items-center justify-between py-4">
-          <div className="flex gap-6 md:gap-10">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-          </div>
-        </div>
-      </header>
-      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
-        <aside className="hidden w-[200px] flex-col md:flex">
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      <div className="container mx-auto px-4 flex flex-1 gap-4 lg:gap-8 xl:gap-12 pt-4">
+        <aside className="hidden lg:flex w-48 xl:w-56 flex-col flex-shrink-0">
           <DashboardNav />
         </aside>
-        <main className="flex w-full flex-1 flex-col overflow-hidden">
+        <main className="flex w-full flex-1 flex-col overflow-hidden min-w-0">
+          <div className="flex items-center gap-4 mb-6 lg:hidden">
+            <MobileNav />
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+          </div>
           {children}
         </main>
       </div>

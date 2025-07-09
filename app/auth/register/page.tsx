@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Navbar } from "@/components/navbar"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -90,7 +91,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 -mt-16 md:-mt-20">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Crear cuenta</CardTitle>
@@ -201,6 +204,7 @@ export default function RegisterPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

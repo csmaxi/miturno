@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { Clock, Plus, Trash } from "lucide-react"
+import { Clock, Plus, Trash, Edit } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,8 @@ export default function ServicesPage() {
   const { user, loading: userLoading } = useUserContext()
   const [services, setServices] = useState<any[]>([])
   const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editingService, setEditingService] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -101,6 +103,60 @@ export default function ServicesPage() {
       toast({
         title: "Error",
         description: error.message || "No se pudo crear el servicio",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEdit = (service: any) => {
+    setEditingService(service)
+    setFormData({
+      name: service.name,
+      description: service.description || "",
+      duration: service.duration,
+      price: service.price ? service.price.toString() : "",
+      is_active: service.is_active,
+    })
+    setEditOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({
+          name: formData.name,
+          description: formData.description,
+          duration: Number.parseInt(formData.duration.toString()),
+          price: formData.price ? Number.parseFloat(formData.price.toString()) : null,
+          is_active: formData.is_active,
+        })
+        .eq("id", editingService.id)
+
+      if (error) throw error
+
+      toast({
+        title: "Servicio actualizado",
+        description: "El servicio ha sido actualizado exitosamente",
+      })
+
+      setFormData({
+        name: "",
+        description: "",
+        duration: 30,
+        price: "",
+        is_active: true,
+      })
+
+      setEditingService(null)
+      setEditOpen(false)
+      refetch()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el servicio",
         variant: "destructive",
       })
     }
@@ -219,6 +275,76 @@ export default function ServicesPage() {
         </Dialog>
       </div>
 
+      {/* Edit Service Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar servicio</DialogTitle>
+            <DialogDescription>Modifica los datos del servicio</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdate}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nombre del servicio</Label>
+                <Input
+                  id="edit-name"
+                  name="name"
+                  placeholder="Ej: Corte de pelo"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Descripción</Label>
+                <Textarea
+                  id="edit-description"
+                  name="description"
+                  placeholder="Describe tu servicio"
+                  value={formData.description}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-duration">Duración (minutos)</Label>
+                  <Input
+                    id="edit-duration"
+                    name="duration"
+                    type="number"
+                    min="5"
+                    step="5"
+                    value={formData.duration}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Precio (opcional)</Label>
+                  <Input
+                    id="edit-price"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.price}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="edit-is_active" checked={formData.is_active} onCheckedChange={handleSwitchChange} />
+                <Label htmlFor="edit-is_active">Servicio activo</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Actualizar servicio</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {loading ? loadingSkeleton : servicesList.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
@@ -243,9 +369,14 @@ export default function ServicesPage() {
                     <CardTitle>{service.name}</CardTitle>
                     <CardDescription>{service.duration} minutos</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(service.id)}>
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(service.id)}>
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

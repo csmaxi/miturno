@@ -384,6 +384,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
                 </PopoverContent>
               </Popover>
             </div>
+            
 
             <div className="space-y-2">
               <Label htmlFor="time">Hora *</Label>
@@ -402,6 +403,23 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
             </div>
           </div>
 
+          {teamMembers.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="teamMember">Profesional</Label>
+              <Select value={formData.teamMemberId} onValueChange={(value) => handleSelectChange("teamMemberId", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un profesional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="name">Nombre completo *</Label>
             <Input
@@ -445,7 +463,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
             </p>
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="email">Email (opcional)</Label>
             <Input
               id="email"
@@ -455,25 +473,8 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
               onChange={handleChange}
               placeholder="tu@email.com"
             />
-          </div>
+          </div> */}
 
-          {teamMembers.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="teamMember">Profesional (opcional)</Label>
-              <Select value={formData.teamMemberId} onValueChange={(value) => handleSelectChange("teamMemberId", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un profesional" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notas adicionales</Label>

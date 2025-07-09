@@ -4,10 +4,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar, Mail, Phone, MapPin, Send } from "lucide-react"
+import { Navbar } from "@/components/navbar"
 
 export default function ContactPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="container mx-auto px-4 py-8 -mt-16 md:-mt-20">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Contacto</h1>
@@ -185,6 +188,7 @@ export default function ContactPage() {
             </Card>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
