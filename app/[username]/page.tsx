@@ -277,8 +277,8 @@ export default function UserProfilePage({
                           </div>
                           <div className="text-right space-y-2">
                             <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span className="font-medium">{service.duration} min</span>
+                              {/* <Clock className="h-4 w-4" /> */}
+                              {/* <span className="font-medium">{service.duration} min</span> */}
                             </div>
                             {service.price && (
                               <div className="bg-primary/10 px-3 py-1 rounded-full">
@@ -343,11 +343,11 @@ export default function UserProfilePage({
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="flex justify-center">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-items-center max-w-4xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
                       {teamMembers.map((member) => (
-                        <div key={member.id} className="group relative flex flex-col items-center text-center p-4 rounded-xl border border-border hover:border-purple-500/30 hover:bg-gradient-to-br hover:from-purple-500/5 hover:to-transparent transition-all duration-300 w-full max-w-xs">
+                        <div key={member.id} className="group relative flex flex-col items-center text-center p-8 sm:p-6 md:p-4 lg:p-6 rounded-xl border border-border hover:border-purple-500/30 hover:bg-gradient-to-br hover:from-purple-500/5 hover:to-transparent transition-all duration-300 w-full max-w-md">
                         <div className="relative mb-4">
-                          <Avatar className="h-24 w-24 sm:h-28 sm:w-28 ring-4 ring-background shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                          <Avatar className="h-40 w-40 sm:h-44 sm:w-44 md:h-36 md:w-36 lg:h-40 lg:w-40 ring-4 ring-background shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                             {member.image_url ? (
                               <OptimizedImage
                                 src={member.image_url}
@@ -355,20 +355,20 @@ export default function UserProfilePage({
                                 className="object-cover"
                               />
                             ) : (
-                              <AvatarFallback className="text-2xl sm:text-3xl font-semibold bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                              <AvatarFallback className="text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-semibold bg-gradient-to-br from-purple-500 to-purple-600 text-white">
                                 {member.name.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             )}
                           </Avatar>
                           {/* Status indicator */}
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-3 border-background rounded-full shadow-lg">
+                          <div className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-9 sm:h-9 md:w-7 md:h-7 lg:w-8 lg:h-8 bg-green-500 border-3 border-background rounded-full shadow-lg">
                             <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-lg group-hover:text-purple-600 transition-colors">{member.name}</h3>
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-2xl sm:text-xl md:text-lg lg:text-xl group-hover:text-purple-600 transition-colors">{member.name}</h3>
                           {member.position && (
-                            <p className="text-sm text-muted-foreground font-medium">{member.position}</p>
+                            <p className="text-lg sm:text-base md:text-sm lg:text-base text-muted-foreground font-medium">{member.position}</p>
                           )}
                           {member.instagram && (
                             <div className="flex items-center justify-center mt-2">
