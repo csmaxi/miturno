@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { format, addDays, startOfWeek, addWeeks } from "date-fns"
 import { es } from "date-fns/locale"
-import { CalendarIcon, Clock } from "lucide-react"
+import { CalendarIcon, Clock, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -52,6 +52,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const [selectedService, setSelectedService] = useState<any>(null)
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
+  const [currentWeek, setCurrentWeek] = useState(0)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -142,7 +143,31 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
     return times
   }
 
+  // Generar fechas disponibles para la semana actual
+  const getAvailableDates = () => {
+    if (!selectedService) return []
+
+    const today = new Date()
+    const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }) // Lunes como inicio
+    const weekStart = addWeeks(startOfCurrentWeek, currentWeek)
+    
+    const dates = []
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(weekStart, i)
+      if (date >= today) {
+        const dayOfWeek = date.getDay()
+        const isAvailable = availability.some((a) => a.day_of_week === dayOfWeek)
+        if (isAvailable) {
+          dates.push(date)
+        }
+      }
+    }
+    
+    return dates
+  }
+
   const availableTimes = getAvailableTimes()
+  const availableDates = getAvailableDates()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -356,9 +381,67 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Fecha *</Label>
+          {/* Fecha - Selector móvil mejorado */}
+          <div className="space-y-2">
+            <Label>Fecha *</Label>
+            
+            {/* Selector de fecha móvil */}
+            <div className="block md:hidden">
+              <div className="flex items-center justify-between mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentWeek(prev => prev - 1)}
+                  disabled={currentWeek <= 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">
+                  Semana {currentWeek === 0 ? "actual" : currentWeek + 1}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentWeek(prev => prev + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1">
+                {availableDates.map((availableDate) => (
+                  <Button
+                    key={availableDate.toISOString()}
+                    type="button"
+                    variant={date && format(date, "yyyy-MM-dd") === format(availableDate, "yyyy-MM-dd") ? "default" : "outline"}
+                    size="sm"
+                    className="h-12 text-xs"
+                    onClick={() => setDate(availableDate)}
+                    disabled={!selectedService}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs opacity-70">
+                        {format(availableDate, "EEE", { locale: es })}
+                      </span>
+                      <span className="font-medium">
+                        {format(availableDate, "d")}
+                      </span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+              
+              {availableDates.length === 0 && (
+                <div className="text-center py-4 text-sm text-muted-foreground">
+                  No hay fechas disponibles esta semana
+                </div>
+              )}
+            </div>
+
+            {/* Selector de fecha desktop */}
+            <div className="hidden md:block">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -384,10 +467,39 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
                 </PopoverContent>
               </Popover>
             </div>
-            
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="time">Hora *</Label>
+          {/* Hora - Selector móvil mejorado */}
+          <div className="space-y-2">
+            <Label htmlFor="time">Hora *</Label>
+            
+            {/* Selector de hora móvil */}
+            <div className="block md:hidden">
+              {availableTimes.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {availableTimes.map((time) => (
+                    <Button
+                      key={time}
+                      type="button"
+                      variant={formData.time === time ? "default" : "outline"}
+                      size="sm"
+                      className="h-12"
+                      onClick={() => handleSelectChange("time", time)}
+                      disabled={!date}
+                    >
+                      {time}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-sm text-muted-foreground">
+                  {!date ? "Selecciona una fecha primero" : "No hay horarios disponibles"}
+                </div>
+              )}
+            </div>
+
+            {/* Selector de hora desktop */}
+            <div className="hidden md:block">
               <Select value={formData.time} onValueChange={(value) => handleSelectChange("time", value)}>
                 <SelectTrigger disabled={!date || availableTimes.length === 0}>
                   <SelectValue placeholder="Seleccionar hora" />
