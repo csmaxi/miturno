@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format, addDays, startOfWeek, addWeeks } from "date-fns"
 import { es } from "date-fns/locale"
-import { CalendarIcon, Clock, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -45,11 +45,13 @@ interface AppointmentFormProps {
   services: any[]
   teamMembers: any[]
   availability: any[]
+  selectedService?: any
+  onClose?: () => void
 }
 
-export function AppointmentForm({ userId, services, teamMembers, availability }: AppointmentFormProps) {
+export function AppointmentForm({ userId, services, teamMembers, availability, selectedService: initialSelectedService, onClose }: AppointmentFormProps) {
   const { toast } = useToast()
-  const [selectedService, setSelectedService] = useState<any>(null)
+  const [selectedService, setSelectedService] = useState<any>(initialSelectedService || null)
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedCountry, setSelectedCountry] = useState(SOUTH_AMERICAN_COUNTRIES[0])
   const [currentWeek, setCurrentWeek] = useState(0)
@@ -66,7 +68,17 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
   const [success, setSuccess] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
 
-  // Escuchar el evento de selección de servicio
+  // Actualizar el servicio seleccionado cuando cambie la prop
+  useEffect(() => {
+    if (initialSelectedService) {
+      setSelectedService(initialSelectedService)
+      // Resetear fecha y hora cuando se selecciona un nuevo servicio
+      setDate(undefined)
+      setFormData(prev => ({ ...prev, time: "" }))
+    }
+  }, [initialSelectedService])
+
+  // Escuchar el evento de selección de servicio (para compatibilidad)
   useEffect(() => {
     const handleServiceSelected = (event: CustomEvent) => {
       setSelectedService(event.detail.service)
@@ -281,6 +293,11 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
         time: "",
         notes: "",
       })
+      
+      // Cerrar modal si existe la función onClose
+      if (onClose) {
+        onClose()
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -321,6 +338,9 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
                   onClick={() => {
                     setShowSuccessDialog(false)
                     setSuccess(false)
+                    if (onClose) {
+                      onClose()
+                    }
                   }}
                   className="w-full sm:w-auto bg-primary hover:bg-primary/90"
                 >
@@ -331,57 +351,52 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
           </AlertDialogContent>
         </AlertDialog>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Reservar Cita</CardTitle>
-            <CardDescription>Completa los datos para confirmar tu reserva</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Service selection will be handled in the parent component */}
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Selecciona un servicio en la columna izquierda</p>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={true}
-              >
-                Selecciona un servicio primero
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <div className="p-3 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground">¡Reserva completada exitosamente!</p>
+          </div>
+        </div>
       </>
     )
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Reservar Cita</CardTitle>
-        <CardDescription>Completa los datos para confirmar tu reserva</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {selectedService && (
-            <div className="p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full bg-primary" />
-                <span className="font-medium">{selectedService.name}</span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {selectedService.duration} minutos
-                </div>
-                {selectedService.price && <span>${selectedService.price.toLocaleString()}</span>}
-              </div>
-            </div>
-          )}
+  // Si no hay servicio seleccionado, mostrar mensaje de selección
+  if (!selectedService) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+          <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Selecciona un servicio</h3>
+          <p className="text-sm text-muted-foreground">
+            Elige un servicio de la lista para comenzar a reservar tu cita
+          </p>
+        </div>
+      </div>
+    )
+  }
 
-          {/* Fecha - Selector móvil mejorado */}
+  return (
+    <div className="space-y-4">
+      {selectedService && (
+        <div className="p-3 bg-muted rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-3 h-3 rounded-full bg-primary" />
+            <span className="font-medium">{selectedService.name}</span>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {selectedService.duration} minutos
+            </div>
+            {selectedService.price && <span>${selectedService.price.toLocaleString()}</span>}
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Fecha - Selector móvil mejorado */}
           <div className="space-y-2">
             <Label>Fecha *</Label>
             
@@ -615,7 +630,6 @@ export function AppointmentForm({ userId, services, teamMembers, availability }:
             {loading ? "Reservando..." : "Confirmar Reserva"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
-  )
-}
+      </div>
+    )
+  }

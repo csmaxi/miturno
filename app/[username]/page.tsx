@@ -15,6 +15,13 @@ import {
   Avatar,
   AvatarFallback,
 } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Clock, Users, Instagram, ArrowLeft, Phone, MessageCircle, Calendar } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import Link from "next/link";
@@ -29,6 +36,8 @@ interface AppointmentFormProps {
   services: any[];
   teamMembers: any[];
   availability: any[];
+  selectedService?: any;
+  onClose?: () => void;
 }
 
 // Componente de carga para el formulario
@@ -68,6 +77,8 @@ export default function UserProfilePage({
   const [availability, setAvailability] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -223,7 +234,7 @@ export default function UserProfilePage({
         </header>
 
         <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-16 relative">
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-8 lg:grid-cols-1">
             {/* Services Selection */}
             <div className="space-y-8">
               <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-card/50">
@@ -233,97 +244,138 @@ export default function UserProfilePage({
                       <Calendar className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">Selecciona un Servicio</CardTitle>
-                      <CardDescription className="text-base">Elige el servicio que deseas reservar</CardDescription>
+                      <CardTitle className="text-xl">Nuestros Servicios</CardTitle>
+                      <CardDescription className="text-base">Descubre nuestra gama de servicios profesionales</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="grid gap-4">
+                  <div className="grid gap-6">
                     {services.map((service, index) => (
                       <div
                         key={service.id}
-                        className="group relative p-6 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-xl border-border hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
+                        className="group relative p-6 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-xl border-border hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent overflow-hidden"
                         onClick={() => {
-                          // This will be handled by the client component
-                          window.dispatchEvent(new CustomEvent('serviceSelected', { 
-                            detail: { service } 
-                          }))
-                          
-                          // Scroll to booking form on mobile
-                          if (window.innerWidth < 1024) { // lg breakpoint
-                            const bookingForm = document.getElementById('booking-form')
-                            if (bookingForm) {
-                              bookingForm.scrollIntoView({ 
-                                behavior: 'smooth', 
-                                block: 'start' 
-                              })
-                            }
-                          }
+                          setSelectedService(service);
+                          setIsModalOpen(true);
                         }}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="relative">
-                              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-primary to-primary/80 group-hover:scale-110 transition-transform duration-300" />
-                              <div className="absolute inset-0 w-5 h-5 rounded-full bg-primary/20 animate-ping" />
-                            </div>
-                            <div className="space-y-1">
-                              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{service.name}</h3>
-                              {service.description && (
-                                <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right space-y-2">
-                            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
-                              {/* <Clock className="h-4 w-4" /> */}
-                              {/* <span className="font-medium">{service.duration} min</span> */}
-                            </div>
-                            {service.price && (
-                              <div className="bg-primary/10 px-3 py-1 rounded-full">
-                                <p className="font-bold text-primary">${service.price.toLocaleString()}</p>
+                        {/* Background pattern */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4 flex-1">
+                              {/* Service Icon */}
+                              <div className="relative mt-1">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                  <Calendar className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background">
+                                  <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
+                                </div>
                               </div>
-                            )}
+                              
+                              {/* Service Info */}
+                              <div className="flex-1 space-y-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-xl group-hover:text-primary transition-colors">{service.name}</h3>
+                                    <div className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                      Disponible
+                                    </div>
+                                  </div>
+                                  {service.description && (
+                                    <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
+                                  )}
+                                </div>
+                                
+                                {/* Service Details */}
+                                <div className="flex items-center gap-4 text-sm">
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    <span>{service.duration} min</span>
+                                  </div>
+                                  <div className="w-px h-4 bg-border" />
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Users className="h-4 w-4" />
+                                    <span>Profesional</span>
+                                  </div>
+                                  {service.price && (
+                                    <>
+                                      <div className="w-px h-4 bg-border" />
+                                      <div className="flex items-center gap-1 text-primary font-semibold">
+                                        <span className="text-xs">$</span>
+                                        <span>{service.price.toLocaleString()}</span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Action Button */}
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="flex items-center gap-2">
+                                {service.price && (
+                                  <div className="bg-primary/10 px-3 py-1 rounded-full">
+                                    <p className="font-bold text-primary text-sm">${service.price.toLocaleString()}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary hover:bg-primary/90"
+                              >
+                                Reservar
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        {/* Hover effect */}
+                        
+                        {/* Hover effect overlay */}
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-
-            </div>
-
-            {/* Booking Form */}
-            <div id="booking-form" className="relative">
-              <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-card/50">
-                <CardHeader className="bg-gradient-to-r from-blue-500/5 to-blue-500/10 border-b">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-lg">
-                      <Calendar className="h-5 w-5 text-blue-600" />
+                  
+                  {/* Empty state */}
+                  {services.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Calendar className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">No hay servicios disponibles</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Por favor, contacta al profesional para más información
+                      </p>
                     </div>
-                    <div>
-                      <CardTitle className="text-xl">Reserva tu Turno</CardTitle>
-                      <CardDescription className="text-base">Completa el formulario para agendar tu cita</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <Suspense fallback={<AppointmentFormLoader />}>
-                    <AppointmentForm
-                      userId={userData.id}
-                      services={services}
-                      teamMembers={teamMembers}
-                      availability={availability}
-                    />
-                  </Suspense>
+                  )}
                 </CardContent>
               </Card>
             </div>
+
+            {/* Modal para el formulario de reserva */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Reservar Cita</DialogTitle>
+                  <DialogDescription>
+                    Completa el formulario para agendar tu cita
+                  </DialogDescription>
+                </DialogHeader>
+                <Suspense fallback={<AppointmentFormLoader />}>
+                  <AppointmentForm
+                    userId={userData?.id}
+                    services={services}
+                    teamMembers={teamMembers}
+                    availability={availability}
+                    selectedService={selectedService}
+                    onClose={() => setIsModalOpen(false)}
+                  />
+                </Suspense>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Team Members - Full Width */}
@@ -331,11 +383,11 @@ export default function UserProfilePage({
             <div className="mt-12">
               <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card via-card to-card/50">
                 <CardHeader className="bg-gradient-to-r from-purple-500/5 to-purple-500/10 border-b">
-                  <div className="flex items-center justify-center gap-3">
+                  <div className="flex gap-3">
                     <div className="p-2 bg-purple-500/10 rounded-lg">
                       <Users className="h-5 w-5 text-purple-600" />
                     </div>
-                    <div className="text-center">
+                    <div>
                       <CardTitle className="text-xl">Equipo</CardTitle>
                       <CardDescription className="text-base">Conoce a nuestro equipo</CardDescription>
                     </div>
