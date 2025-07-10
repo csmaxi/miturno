@@ -254,7 +254,7 @@ export default function UserProfilePage({
                     {services.map((service, index) => (
                       <div
                         key={service.id}
-                        className="group relative p-6 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-xl border-border hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent overflow-hidden"
+                        className="group relative p-4 sm:p-6 border rounded-xl cursor-pointer transition-all duration-300 hover:shadow-xl border-border hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent overflow-hidden"
                         onClick={() => {
                           setSelectedService(service);
                           setIsModalOpen(true);
@@ -264,46 +264,46 @@ export default function UserProfilePage({
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         
                         <div className="relative z-10">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-4 flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div className="flex items-start gap-3 sm:gap-4 flex-1">
                               {/* Service Icon */}
-                              <div className="relative mt-1">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                                  <Calendar className="h-6 w-6 text-white" />
+                              <div className="relative mt-1 flex-shrink-0">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                 </div>
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background">
+                                <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-background">
                                   <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
                                 </div>
                               </div>
                               
                               {/* Service Info */}
-                              <div className="flex-1 space-y-3">
+                              <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
                                 <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-xl group-hover:text-primary transition-colors">{service.name}</h3>
-                                    <div className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <h3 className="font-bold text-lg sm:text-xl group-hover:text-primary transition-colors truncate">{service.name}</h3>
+                                    <div className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full w-fit">
                                       Disponible
                                     </div>
                                   </div>
                                   {service.description && (
-                                    <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
+                                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{service.description}</p>
                                   )}
                                 </div>
                                 
                                 {/* Service Details */}
-                                <div className="flex items-center gap-4 text-sm">
+                                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm">
                                   <div className="flex items-center gap-1 text-muted-foreground">
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                                     <span>{service.duration} min</span>
                                   </div>
-                                  <div className="w-px h-4 bg-border" />
+                                  <div className="hidden sm:block w-px h-4 bg-border" />
                                   <div className="flex items-center gap-1 text-muted-foreground">
-                                    <Users className="h-4 w-4" />
+                                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                                     <span>Profesional</span>
                                   </div>
                                   {service.price && (
                                     <>
-                                      <div className="w-px h-4 bg-border" />
+                                      <div className="hidden sm:block w-px h-4 bg-border" />
                                       <div className="flex items-center gap-1 text-primary font-semibold">
                                         <span className="text-xs">$</span>
                                         <span>{service.price.toLocaleString()}</span>
@@ -314,22 +314,20 @@ export default function UserProfilePage({
                               </div>
                             </div>
                             
-                            {/* Action Button */}
-                            <div className="flex flex-col items-end gap-2">
-                              <div className="flex items-center gap-2">
-                                {service.price && (
-                                  <div className="bg-primary/10 px-3 py-1 rounded-full">
-                                    <p className="font-bold text-primary text-sm">${service.price.toLocaleString()}</p>
-                                  </div>
-                                )}
-                              </div>
+                            {/* Action Button and Price */}
+                            {/* <div className="flex flex-col sm:flex-col items-end gap-2 sm:gap-2">
+                              {service.price && (
+                                <div className="bg-primary/10 px-3 py-1 rounded-full">
+                                  <p className="font-bold text-primary text-sm">${service.price.toLocaleString()}</p>
+                                </div>
+                              )}
                               <Button
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary hover:bg-primary/90"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary hover:bg-primary/90 w-full sm:w-auto"
                               >
                                 Reservar
                               </Button>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                         

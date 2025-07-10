@@ -294,10 +294,10 @@ export function AppointmentForm({ userId, services, teamMembers, availability, s
         notes: "",
       })
       
-      // Cerrar modal si existe la función onClose
-      if (onClose) {
-        onClose()
-      }
+      // NO cerrar el modal automáticamente - dejar que el usuario vea el diálogo de éxito
+      // if (onClose) {
+      //   onClose()
+      // }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -338,6 +338,7 @@ export function AppointmentForm({ userId, services, teamMembers, availability, s
                   onClick={() => {
                     setShowSuccessDialog(false)
                     setSuccess(false)
+                    // Ahora sí cerrar el modal después de que el usuario haga clic en "Aceptar"
                     if (onClose) {
                       onClose()
                     }
@@ -352,8 +353,25 @@ export function AppointmentForm({ userId, services, teamMembers, availability, s
         </AlertDialog>
 
         <div className="space-y-4">
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">¡Reserva completada exitosamente!</p>
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="h-4 w-4 text-green-600"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-green-800">¡Reserva completada exitosamente!</p>
+                <p className="text-sm text-green-600">Tu turno ha sido registrado en nuestro sistema.</p>
+              </div>
+            </div>
           </div>
         </div>
       </>

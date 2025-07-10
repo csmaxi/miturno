@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Calendar, Menu, Settings, Edit } from "lucide-react"
+import { Calendar, Menu, Settings, Edit, X } from "lucide-react"
 import { useState, useMemo, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useAuthStore } from "@/lib/store/auth-store"
 import { useUserContext } from "@/lib/context/UserContext"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 export function Navbar() {
   const pathname = usePathname()
@@ -93,6 +94,39 @@ export function Navbar() {
               <Calendar className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
               <span className="font-bold text-lg sm:text-xl truncate">MiTurno</span>
             </Link>
+            
+            {/* Centered hamburger menu */}
+            <div className="flex-1 flex justify-center">
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="rounded-full">
+                    <Menu className="h-4 w-4" />
+                    <span className="sr-only">Abrir menú</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="top" className="w-full h-auto pt-16">
+                  <SheetHeader>
+                    <SheetTitle className="text-center">Navegación</SheetTitle>
+                  </SheetHeader>
+                  <nav className="flex flex-col items-center gap-4 mt-6">
+                    {routes.map((route) => (
+                      <Link
+                        key={route.href}
+                        href={route.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          "text-lg font-medium transition-colors hover:text-primary px-4 py-3 rounded-lg w-full text-center",
+                          route.active ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {route.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
+            
             <div className="flex items-center space-x-1 sm:space-x-2">
               {isOwnProfile && (
                 <Button variant="outline" asChild size="sm" className="hidden sm:inline-flex">
@@ -128,20 +162,6 @@ export function Navbar() {
               <ThemeSwitcher />
             </div>
           </div>
-          <nav className="flex items-center justify-center space-x-4 sm:space-x-6 py-3 px-2 border-t">
-            {routes.map((route) => (
-              <Link
-                key={route.href}
-                href={route.href}
-                className={cn(
-                  "text-sm sm:text-base font-medium transition-colors hover:text-primary px-2 py-1 rounded-md",
-                  route.active ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted/50"
-                )}
-              >
-                {route.label}
-              </Link>
-            ))}
-          </nav>
         </div>
 
         {/* Desktop layout */}
