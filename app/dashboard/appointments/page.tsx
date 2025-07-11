@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { useUserContext } from "@/lib/context/UserContext"
-import { Check, X, Calendar, Info } from "lucide-react"
+import { Check, X, Calendar, Info, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -41,6 +41,8 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<any>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [appointmentToDelete, setAppointmentToDelete] = useState<any>(null)
 
   const fetchAppointments = useCallback(async () => {
     if (!user) return
@@ -174,6 +176,42 @@ export default function AppointmentsPage() {
     setSelectedAppointment(appointment)
     setNotes(appointment.notes || "")
     setOpenDialog(true)
+  }
+
+  const handleDeleteAppointment = async () => {
+    if (!appointmentToDelete) return
+
+    setProcessingAction(true)
+    try {
+      const { error } = await createClientSupabaseClient()
+        .from("appointments")
+        .delete()
+        .eq("id", appointmentToDelete.id)
+
+      if (error) throw error
+
+      toast({
+        title: "Turno eliminado",
+        description: "El turno ha sido eliminado exitosamente",
+      })
+
+      setDeleteDialogOpen(false)
+      setAppointmentToDelete(null)
+      refetch()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el turno",
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingAction(false)
+    }
+  }
+
+  const openDeleteDialog = (appointment: any) => {
+    setAppointmentToDelete(appointment)
+    setDeleteDialogOpen(true)
   }
 
   const getStatusBadge = (status: string) => {
@@ -338,6 +376,18 @@ export default function AppointmentsPage() {
                         </Button>
                       </div>
                     )}
+                    {(appointment.status === "pending" || appointment.status === "cancelled") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                        onClick={() => openDeleteDialog(appointment)}
+                        disabled={processingAction}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -427,6 +477,40 @@ export default function AppointmentsPage() {
           </div>
           <DialogFooter>
             <Button onClick={handleAddNotes}>Guardar notas</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar turno</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar este turno? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {appointmentToDelete && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-medium">{appointmentToDelete.client_name}</p>
+                <p className="text-sm text-muted-foreground">{appointmentToDelete.client_email}</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(appointmentToDelete.appointment_date), "PPP", { locale: es })} - {appointmentToDelete.start_time.substring(0, 5)}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAppointment}
+              disabled={processingAction}
+            >
+              {processingAction ? "Eliminando..." : "Eliminar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

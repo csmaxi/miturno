@@ -254,7 +254,7 @@ export default function ExplorarPage({
             </div>
             
             {/* Quick filters */}
-            <div className="flex items-center justify-center gap-3 flex-wrap">
+            {/* <div className="flex items-center justify-center gap-3 flex-wrap">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Filter className="h-4 w-4" />
                 <span>Filtros:</span>
@@ -271,11 +271,11 @@ export default function ExplorarPage({
                 <Star className="mr-1 h-3 w-3" />
                 Mejor valorados
               </Button>
-            </div>
+            </div> */}
           </div>
 
           {/* Stats Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 text-center">
               <CardContent className="p-6">
                 <Users className="h-8 w-8 text-blue-500 mx-auto mb-3" />
@@ -299,7 +299,7 @@ export default function ExplorarPage({
                 <div className="text-sm text-muted-foreground">Reservas</div>
               </CardContent>
             </Card>
-          </div>
+          </div> */}
 
           {/* Profiles List */}
           <ProfilesList page={page} searchQuery={debouncedSearch} />

@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClientSupabaseClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/store/auth-store";
-import { Calendar, Clock, Share2, Users, Zap, Shield, Smartphone, Globe, CheckCircle, ArrowRight, Star, Sparkles, Target, TrendingUp } from "lucide-react";
+import { Calendar, Clock, Share2, Users, Zap, Shield, Smartphone, Globe, CheckCircle, ArrowRight, Star, Sparkles, Target, TrendingUp, Settings } from "lucide-react";
 import { Session } from '@supabase/supabase-js';
 import { Navbar } from "@/components/navbar";
 import { useUserContext } from "@/lib/context/UserContext"
@@ -334,83 +334,99 @@ export default function Home() {
             {/* Main Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Quick Actions */}
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-blue-500/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
+                    <Zap className="h-5 w-5 text-blue-600" />
                     Acciones Rápidas
                   </CardTitle>
                   <CardDescription>
-                    Accede a las funciones más utilizadas
+                    Funciones diarias para gestionar tu negocio
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button asChild className="w-full justify-start" variant="outline">
+                  <Button asChild className="w-full justify-start bg-white hover:bg-gray-50 border-blue-200 hover:border-blue-300" variant="outline">
                     <Link href="/dashboard/appointments">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Ver todas las citas
+                      <Calendar className="mr-2 h-4 w-4 text-blue-600" />
+                      Ver citas de hoy
                     </Link>
                   </Button>
-                  <Button asChild className="w-full justify-start" variant="outline">
-                    <Link href="/dashboard/services">
-                      <Users className="mr-2 h-4 w-4" />
-                      Gestionar servicios
+                  <Button asChild className="w-full justify-start bg-white hover:bg-gray-50 border-blue-200 hover:border-blue-300" variant="outline">
+                    <Link href="/dashboard/appointments">
+                      <Clock className="mr-2 h-4 w-4 text-blue-600" />
+                      Próximas citas
                     </Link>
                   </Button>
-                  <Button asChild className="w-full justify-start" variant="outline">
-                    <Link href="/dashboard/availability">
-                      <Clock className="mr-2 h-4 w-4" />
-                      Configurar horarios
-                    </Link>
+                  <Button 
+                    onClick={() => {
+                      const url = `${window.location.origin}/${userData?.username || 'usuario'}`;
+                      navigator.clipboard.writeText(url);
+                      // Aquí podrías mostrar un toast de confirmación
+                      alert('Enlace copiado al portapapeles');
+                    }}
+                    className="w-full justify-start bg-white hover:bg-gray-50 border-blue-200 hover:border-blue-300" 
+                    variant="outline"
+                  >
+                    <Share2 className="mr-2 h-4 w-4 text-blue-600" />
+                    Compartir mi enlace
                   </Button>
-                  <Button asChild className="w-full justify-start" variant="outline">
-                    <Link href="/dashboard/settings">
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Ver mi enlace público
+                  <Button asChild className="w-full justify-start bg-white hover:bg-gray-50 border-blue-200 hover:border-blue-300" variant="outline">
+                    <Link href={`/${userData?.username || 'usuario'}`}>
+                      <Globe className="mr-2 h-4 w-4 text-blue-600" />
+                      Ver mi página
                     </Link>
                   </Button>
                 </CardContent>
               </Card>
 
               {/* Setup Checklist */}
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500/5 to-green-500/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-primary" />
+                    <CheckCircle className="h-5 w-5 text-green-600" />
                     Configuración Inicial
                   </CardTitle>
                   <CardDescription>
-                    Completa estos pasos para empezar a recibir reservas
+                    Pasos esenciales para activar tu negocio
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs text-primary font-bold">1</span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-xs text-green-700 font-bold">1</span>
                     </div>
-                    <span className="text-sm">Crear tu primer servicio</span>
-                    <Button asChild size="sm" className="ml-auto">
-                      <Link href="/dashboard/services">Hacer</Link>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-green-800">Crear servicios</span>
+                      <p className="text-xs text-green-600">Define qué ofreces</p>
+                    </div>
+                    <Button asChild size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                      <Link href="/dashboard/services">Crear</Link>
                     </Button>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs text-primary font-bold">2</span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-xs text-green-700 font-bold">2</span>
                     </div>
-                    <span className="text-sm">Configurar horarios disponibles</span>
-                    <Button asChild size="sm" className="ml-auto">
-                      <Link href="/dashboard/availability">Hacer</Link>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-green-800">Configurar horarios</span>
+                      <p className="text-xs text-green-600">Define cuándo trabajas</p>
+                    </div>
+                    <Button asChild size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                      <Link href="/dashboard/availability">Configurar</Link>
                     </Button>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs text-primary font-bold">3</span>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-xs text-green-700 font-bold">3</span>
                     </div>
-                    <span className="text-sm">Compartir tu enlace</span>
-                    <Button asChild size="sm" className="ml-auto">
-                      <Link href="/dashboard">Ver</Link>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-green-800">Personalizar perfil</span>
+                      <p className="text-xs text-green-600">Cuenta tu historia</p>
+                    </div>
+                    <Button asChild size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                      <Link href="/dashboard/settings">Personalizar</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -462,23 +478,23 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <h4 className="font-medium text-sm mb-1">💡 Primer consejo</h4>
+                    <h4 className="font-medium text-sm mb-1">📅 Configura horarios realistas</h4>
                     <p className="text-xs text-muted-foreground">
-                      Agrega fotos a tus servicios para que se vean más profesionales
+                      Define tus días y horarios de trabajo para evitar conflictos
                     </p>
                   </div>
                   
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <h4 className="font-medium text-sm mb-1">📱 Optimiza para móviles</h4>
+                    <h4 className="font-medium text-sm mb-1">💰 Establece precios claros</h4>
                     <p className="text-xs text-muted-foreground">
-                      La mayoría de tus clientes reservarán desde sus teléfonos
+                      Incluye el precio en cada servicio para que tus clientes sepan qué esperar
                     </p>
                   </div>
                   
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <h4 className="font-medium text-sm mb-1">🔗 Comparte tu enlace</h4>
+                    <h4 className="font-medium text-sm mb-1">📱 Comparte tu enlace</h4>
                     <p className="text-xs text-muted-foreground">
-                      Incluye tu enlace en WhatsApp, Instagram y otras redes
+                      Envía tu enlace por WhatsApp, Instagram o cualquier red social
                     </p>
                   </div>
                 </CardContent>
